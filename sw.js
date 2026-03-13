@@ -53,7 +53,7 @@ function scheduleAll(p){
   }
 
   [
-    {key:'morningTime',   icon:'🌅', title:'Good morning, AI Learner!',  body: p=>`You have ${p.totalTasks} tasks today. First up: ${p.firstTask}`},
+    {key:'morningTime',   icon:'🌅', title:'Good morning, Viku!',  body: p=>`You have ${p.totalTasks} tasks today. First up: ${p.firstTask}`},
     {key:'eveningTime',   icon:'🌆', title:'Evening Summary',             body: p=>`Done today: ${p.checkedIds.length}/${p.totalTasks} tasks ✅`},
     {key:'customTime1',   icon:'⏰', title:'Custom Reminder',             body: p=>p.customMsg1||'Time to check your tracker.'},
     {key:'customTime2',   icon:'⏰', title:'Custom Reminder',             body: p=>p.customMsg2||'Time to check your tracker.'},
