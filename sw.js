@@ -1,4 +1,4 @@
-// AI Learner Tracker — Service Worker v5
+// Learner Tracker — Service Worker v7
 const SW_VERSION = 'ait-sw-v5';
 self.addEventListener('install',  e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
