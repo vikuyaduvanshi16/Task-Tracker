@@ -1,0 +1,18 @@
+{
+  "name": "Task Tracker",
+  "short_name": "Tracker",
+  "description": "AI Learner Daily Task Tracker",
+  "start_url": "/Task-Tracker/",
+  "scope": "/Task-Tracker/",
+  "display": "standalone",
+  "background_color": "#060912",
+  "theme_color": "#060912",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%231E3A5F'/><text y='46' x='8' font-size='42'>🤖</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,0 +1,2155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Learner — Daily Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#060912">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060912;
+  --surface:#0d1526;
+  --surface2:#131d30;
+  --surface3:#1a2640;
+  --surface4:#202e4a;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.11);
+  --border3:rgba(255,255,255,0.18);
+  --text:#eef2ff;
+  --text2:#c4cde8;
+  --muted:#5a6a8a;
+  --muted2:#7a8daf;
+  --accent:#5b9cf6;
+  --accent2:#7c68fa;
+  --green:#10d9a0;
+  --amber:#f5a623;
+  --red:#f4567a;
+  --pink:#f06292;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Space Grotesk',sans-serif;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-top:env(safe-area-inset-top,0px);
+  --nav-h:68px;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--sans);background:var(--bg);color:var(--text);
+  min-height:100vh;min-height:100dvh;
+  padding-bottom:calc(var(--nav-h) + var(--safe-bottom) + 16px);
+  padding-top:var(--safe-top);
+  overflow-x:hidden;
+}
+
+/* ── BG TEXTURE ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 110% -10%, rgba(91,156,246,.09) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at -10% 80%, rgba(124,104,250,.07) 0%, transparent 55%),
+    linear-gradient(rgba(91,156,246,.022) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(91,156,246,.022) 1px,transparent 1px);
+  background-size:auto,auto,44px 44px,44px 44px;
+}
+
+/* ── WRAPPER ── */
+.wrapper{position:relative;z-index:1;max-width:700px;margin:0 auto;padding:18px 16px 20px;}
+
+/* ══════════════════════════════════════════════
+   TODAY VIEW
+══════════════════════════════════════════════ */
+
+/* ── TOP BAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;animation:fadeUp .35s ease both;}
+.topbar-left{}
+.day-chip{font-family:var(--mono);font-size:10px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:6px;}
+.day-chip::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 2s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+.greeting{font-size:23px;font-weight:700;line-height:1.2;letter-spacing:-.3px;}
+.greeting em{color:var(--accent);font-style:normal;}
+.date-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.04em;}
+
+/* ── RING ── */
+.ring-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.ring-svg{width:76px;height:76px;filter:drop-shadow(0 0 12px rgba(91,156,246,.25));}
+.ring-bg{fill:none;stroke:var(--surface3);stroke-width:6;}
+.ring-fg{fill:none;stroke:url(#rg);stroke-width:6;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .7s cubic-bezier(.4,0,.2,1);}
+.ring-txt{font-family:var(--mono);font-size:13px;font-weight:600;fill:var(--text);dominant-baseline:middle;text-anchor:middle;}
+.ring-lbl{font-size:9px;color:var(--muted);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;}
+
+/* ── ALARM TOGGLE BANNER ── */
+.alarm-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r);padding:11px 14px;margin-bottom:14px;
+  animation:fadeUp .35s .05s ease both;
+  transition:border-color .2s,background .2s;
+}
+.alarm-bar.alarm-on{border-color:rgba(91,156,246,.35);background:linear-gradient(135deg,rgba(91,156,246,.08),rgba(124,104,250,.04));}
+.alarm-bar.alarm-off{border-color:rgba(244,86,122,.25);background:rgba(244,86,122,.04);}
+.alarm-bar-left{display:flex;align-items:center;gap:10px;}
+.alarm-icon{font-size:20px;line-height:1;transition:filter .2s;}
+.alarm-bar.alarm-off .alarm-icon{filter:grayscale(1);opacity:.5;}
+.alarm-bar-text{}
+.alarm-bar-title{font-size:13px;font-weight:600;color:var(--text);}
+.alarm-bar-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:1px;}
+.alarm-bar.alarm-on .alarm-bar-sub{color:var(--green);}
+.alarm-bar.alarm-off .alarm-bar-sub{color:var(--red);}
+
+/* Big pill toggle */
+.alarm-toggle-btn{
+  display:flex;align-items:center;gap:8px;
+  background:none;border:1.5px solid var(--border3);
+  border-radius:99px;padding:6px 14px 6px 10px;
+  cursor:pointer;transition:all .2s;flex-shrink:0;
+  font-family:var(--sans);font-size:12px;font-weight:600;color:var(--muted2);
+}
+.alarm-toggle-btn.on{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;box-shadow:0 4px 16px rgba(91,156,246,.4);}
+.alarm-toggle-btn.off{border-color:rgba(244,86,122,.4);color:var(--red);}
+.alarm-toggle-dot{width:8px;height:8px;border-radius:50%;background:currentColor;transition:transform .2s;}
+.alarm-toggle-btn.on .alarm-toggle-dot{background:rgba(255,255,255,.9);}
+
+/* ── STAT PILLS ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:14px;animation:fadeUp .35s .07s ease both;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 10px 8px;text-align:center;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;}
+.stat-card:nth-child(1)::before{background:var(--accent);}
+.stat-card:nth-child(2)::before{background:var(--accent2);}
+.stat-card:nth-child(3)::before{background:var(--amber);}
+.stat-card:nth-child(4)::before{background:var(--green);}
+.stat-val{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--text);line-height:1.1;}
+.stat-lbl{font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:3px;text-transform:uppercase;letter-spacing:.06em;}
+
+/* ── CURRENT TASK ── */
+#cur-card{
+  background:linear-gradient(135deg,rgba(91,156,246,.12),rgba(124,104,250,.07));
+  border:1px solid rgba(91,156,246,.3);border-radius:var(--r);
+  padding:14px 16px;margin-bottom:14px;display:none;
+  animation:fadeUp .35s .09s ease both;position:relative;overflow:hidden;
+}
+#cur-card::after{
+  content:'';position:absolute;right:-20px;top:-20px;width:80px;height:80px;
+  border-radius:50%;background:radial-gradient(circle,rgba(91,156,246,.18),transparent 70%);
+}
+.cur-lbl{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--accent);text-transform:uppercase;margin-bottom:4px;display:flex;align-items:center;gap:5px;}
+.cur-live{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 1.4s ease infinite;}
+.cur-txt{font-size:15px;font-weight:700;letter-spacing:-.2px;}
+.cur-time{font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:3px;}
+
+/* ── DONE BANNER ── */
+#done-banner{
+  display:none;text-align:center;padding:20px 16px;
+  background:linear-gradient(135deg,rgba(16,217,160,.09),rgba(91,156,246,.07));
+  border:1px solid rgba(16,217,160,.22);border-radius:var(--r);margin-bottom:14px;
+}
+.bang{font-size:32px;margin-bottom:6px;}
+.bang-t{font-size:17px;font-weight:700;color:var(--green);}
+.bang-s{font-size:12px;color:var(--muted);margin-top:4px;font-family:var(--mono);}
+
+/* ── SECTIONS ── */
+.sec-block{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  overflow:hidden;margin-bottom:10px;animation:fadeUp .35s ease both;
+}
+.sec-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 14px;cursor:pointer;user-select:none;
+  transition:background .12s;
+}
+.sec-head:hover{background:rgba(255,255,255,.025);}
+.sec-head:active{background:rgba(255,255,255,.04);}
+.sec-name-wrap{display:flex;align-items:center;gap:9px;}
+.sec-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sec-name{font-size:12px;font-weight:600;letter-spacing:.04em;}
+.sec-meta{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;color:var(--muted);}
+.sec-count{font-weight:600;}
+.sec-bar-wrap{width:48px;height:3px;background:var(--surface3);border-radius:99px;overflow:hidden;}
+.sec-bar{height:100%;border-radius:99px;transition:width .4s ease;}
+.sec-chevron{font-size:11px;color:var(--muted);transition:transform .25s;}
+.sec-chevron.open{transform:rotate(180deg);}
+.sec-body{overflow:hidden;transition:max-height .3s ease;}
+
+/* ── TASK ROW ── */
+.task-row{
+  display:flex;align-items:center;gap:11px;
+  padding:11px 14px;border-top:1px solid var(--border);
+  cursor:pointer;transition:background .1s;position:relative;
+}
+.task-row:hover{background:rgba(255,255,255,.02);}
+.task-row:active{background:rgba(255,255,255,.04);}
+.task-row.done{opacity:.38;}
+.task-row.done .task-txt{text-decoration:line-through;color:var(--muted);}
+.task-row.cur-hl{background:rgba(91,156,246,.05);}
+.task-row.cur-hl::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:0 2px 2px 0;}
+.cb{
+  width:22px;height:22px;border:1.5px solid rgba(255,255,255,.15);
+  border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;background:transparent;
+}
+.cb.chk{background:var(--accent);border-color:var(--accent);box-shadow:0 2px 8px rgba(91,156,246,.4);}
+.cb svg{display:none;}
+.cb.chk svg{display:block;}
+.task-txt{font-size:13.5px;flex:1;line-height:1.4;font-weight:500;}
+.task-time{font-family:var(--mono);font-size:10px;color:var(--muted);white-space:nowrap;}
+.edit-task-btn{
+  width:28px;height:28px;border-radius:8px;background:none;border:none;
+  color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;opacity:0;transition:opacity .15s,background .15s;
+}
+.task-row:hover .edit-task-btn,.task-row:active .edit-task-btn{opacity:1;}
+@media(max-width:600px){.edit-task-btn{opacity:.5;}}
+.edit-task-btn:hover{background:var(--surface2);color:var(--text);}
+
+/* ── STREAK CALENDAR ── */
+.streak-sec{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px;margin-bottom:10px;
+  animation:fadeUp .35s .18s ease both;
+}
+.streak-title{
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:12px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.streak-badge{
+  display:flex;align-items:center;gap:5px;
+  background:linear-gradient(135deg,rgba(245,166,35,.12),rgba(245,166,35,.06));
+  border:1px solid rgba(245,166,35,.25);border-radius:99px;
+  padding:3px 9px;font-size:11px;font-weight:600;color:var(--amber);
+}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;padding-bottom:4px;}
+.cal-cell{aspect-ratio:1;border-radius:4px;background:var(--surface2);transition:transform .1s;}
+.cal-cell.hit{background:linear-gradient(135deg,var(--accent),var(--accent2));opacity:.85;}
+.cal-cell.today{outline:1.5px solid var(--accent);outline-offset:1.5px;}
+.cal-cell.future{background:rgba(255,255,255,.025);}
+
+/* ── BOTTOM ROW ── */
+.bottom-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:0 2px;}
+.reset-btn{
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+  background:none;border:1px solid var(--border2);border-radius:8px;
+  padding:6px 13px;cursor:pointer;transition:all .15s;letter-spacing:.04em;
+}
+.reset-btn:hover{color:var(--red);border-color:rgba(244,86,122,.4);}
+.quote-txt{font-size:11px;font-family:var(--mono);color:var(--muted);font-style:italic;text-align:right;max-width:200px;line-height:1.5;}
+
+/* ══════════════════════════════════════════════
+   BOTTOM NAV
+══════════════════════════════════════════════ */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(6,9,18,.88);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--border2);
+  display:flex;justify-content:space-around;align-items:center;
+  padding:10px 0 calc(10px + var(--safe-bottom));
+  z-index:50;
+}
+.nav-btn{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  padding:4px 16px;border-radius:12px;transition:color .15s;
+  font-family:var(--sans);position:relative;
+}
+.nav-btn.active{color:var(--accent);}
+.nav-btn.active::after{
+  content:'';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);
+  width:20px;height:2px;background:var(--accent);border-radius:99px;
+}
+.nav-btn:active{background:rgba(255,255,255,.04);}
+.nav-icon{font-size:20px;line-height:1;}
+.nav-lbl{font-size:9px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;}
+
+/* ══════════════════════════════════════════════
+   VIEWS
+══════════════════════════════════════════════ */
+.view{display:none;}
+.view.active{display:block;}
+
+/* ── VIEW HEADER ── */
+.view-header{margin-bottom:20px;animation:fadeUp .35s ease both;}
+.view-header .day-chip{margin-bottom:5px;}
+.view-title{font-size:22px;font-weight:700;letter-spacing:-.3px;}
+.view-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;}
+
+/* ══════════════════════════════════════════════
+   TRENDS VIEW
+══════════════════════════════════════════════ */
+.trend-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;}
+.trend-card-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
+.trend-card-title{font-size:13px;font-weight:600;}
+.trend-card-sub{font-size:10px;font-family:var(--mono);color:var(--muted);}
+.tstat{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+.tstat-val{font-size:22px;font-weight:700;font-family:var(--mono);}
+.tstat-lbl{font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono);}
+.tstat-delta{font-size:10px;font-family:var(--mono);margin-top:2px;}
+.tstat-delta.up{color:var(--green);}
+.tstat-delta.dn{color:var(--red);}
+.wday-row{display:flex;align-items:center;gap:9px;}
+.wday-name{font-family:var(--mono);font-size:11px;color:var(--muted);width:28px;flex-shrink:0;}
+.wday-bar-wrap{flex:1;height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;}
+.wday-bar-fill{height:100%;border-radius:99px;background:var(--accent);transition:width .6s ease;}
+.wday-pct{font-family:var(--mono);font-size:11px;color:var(--muted);width:32px;text-align:right;flex-shrink:0;}
+.trate-row{display:flex;align-items:center;gap:8px;}
+.trate-name{font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.trate-bar-wrap{width:90px;height:5px;background:var(--surface2);border-radius:99px;overflow:hidden;flex-shrink:0;}
+.trate-bar-fill{height:100%;border-radius:99px;transition:width .6s ease;}
+.trate-pct{font-family:var(--mono);font-size:11px;color:var(--muted);width:30px;text-align:right;flex-shrink:0;}
+.empty-state{text-align:center;padding:24px 0;color:var(--muted);font-family:var(--mono);font-size:12px;}
+
+/* ══════════════════════════════════════════════
+   MONTHLY REVIEW
+══════════════════════════════════════════════ */
+.mr-hero{
+  background:linear-gradient(135deg,rgba(91,156,246,.1),rgba(124,104,250,.07));
+  border:1px solid rgba(91,156,246,.22);border-radius:16px;
+  padding:18px 18px 14px;margin-bottom:12px;animation:fadeUp .35s ease both;
+}
+.mr-hero-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.mr-score-wrap{text-align:right;}
+.mr-score{font-family:var(--mono);font-size:38px;font-weight:700;color:var(--accent);line-height:1;}
+.mr-score-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.1em;}
+.mr-grade{display:inline-block;font-family:var(--mono);font-size:13px;font-weight:700;padding:3px 10px;border-radius:99px;margin-top:5px;}
+.grade-s{background:rgba(16,217,160,.15);color:var(--green);border:1px solid rgba(16,217,160,.3);}
+.grade-a{background:rgba(91,156,246,.15);color:var(--accent);border:1px solid rgba(91,156,246,.3);}
+.grade-b{background:rgba(245,166,35,.15);color:var(--amber);border:1px solid rgba(245,166,35,.3);}
+.grade-c{background:rgba(244,86,122,.15);color:var(--red);border:1px solid rgba(244,86,122,.3);}
+.mr-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.mr-mini-stat{background:rgba(255,255,255,.035);border-radius:10px;padding:10px;text-align:center;}
+.mr-mini-val{font-family:var(--mono);font-size:18px;font-weight:700;}
+.mr-mini-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;line-height:1.5;text-transform:uppercase;letter-spacing:.06em;}
+
+.mr-week-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.mr-week-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;animation:fadeUp .35s .05s ease both;}
+.mr-week-card.best{border-color:rgba(16,217,160,.3);background:rgba(16,217,160,.03);}
+.mr-week-card.worst{border-color:rgba(244,86,122,.25);background:rgba(244,86,122,.025);}
+.mr-wk-badge{font-size:20px;margin-bottom:6px;}
+.mr-wk-label{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:3px;font-weight:600;}
+.mr-wk-label.best{color:var(--green);}
+.mr-wk-label.worst{color:var(--red);}
+.mr-wk-title{font-size:13px;font-weight:700;margin-bottom:2px;}
+.mr-wk-dates{font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:8px;}
+.mr-wk-pct{font-family:var(--mono);font-size:24px;font-weight:700;line-height:1;}
+.mr-wk-pct.best{color:var(--green);}
+.mr-wk-pct.worst{color:var(--red);}
+.mr-wk-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:3px;}
+
+.mr-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;animation:fadeUp .35s .08s ease both;}
+.mr-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.mr-card-title{font-size:13px;font-weight:600;}
+.mr-card-sub{font-family:var(--mono);font-size:10px;color:var(--muted);}
+
+.skip-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.skip-item:last-child{border-bottom:none;padding-bottom:0;}
+.skip-rank{font-family:var(--mono);font-size:11px;color:var(--muted);width:22px;flex-shrink:0;text-align:center;}
+.skip-name{font-size:13px;flex:1;line-height:1.35;font-weight:500;}
+.skip-bar-col{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.skip-pct{font-family:var(--mono);font-size:11px;font-weight:600;}
+.skip-bar-track{width:64px;height:4px;background:var(--surface2);border-radius:99px;overflow:hidden;}
+.skip-bar-fill{height:100%;border-radius:99px;transition:width .6s ease;}
+
+.insight-list{display:flex;flex-direction:column;gap:8px;}
+.insight-item{display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,.025);border-radius:10px;padding:11px 13px;border:1px solid var(--border);}
+.insight-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.insight-txt{font-size:12px;color:var(--muted2);line-height:1.65;}
+.insight-txt strong{color:var(--text);font-weight:600;}
+
+.mr-month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;animation:fadeUp .35s ease both;}
+.mr-month-title{font-size:15px;font-weight:700;letter-spacing:-.2px;}
+.mr-nav-btn{
+  background:var(--surface2);border:1px solid var(--border2);border-radius:9px;
+  color:var(--muted2);padding:7px 13px;cursor:pointer;font-family:var(--mono);font-size:11px;
+  transition:all .15s;letter-spacing:.04em;
+}
+.mr-nav-btn:hover{color:var(--text);border-color:var(--accent);}
+.mr-nav-btn:disabled{opacity:.3;cursor:default;}
+
+.day-heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:10px;}
+.hm-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;padding-bottom:3px;}
+.hm-cell{aspect-ratio:1;border-radius:4px;cursor:default;}
+.hm-cell.hm-empty{background:transparent;}
+.hm-cell.hm-future{background:rgba(255,255,255,.02);}
+.hm-cell.hm-0{background:var(--surface2);}
+.hm-cell.hm-25{background:rgba(91,156,246,.25);}
+.hm-cell.hm-50{background:rgba(91,156,246,.55);}
+.hm-cell.hm-75{background:rgba(16,217,160,.5);}
+.hm-cell.hm-100{background:var(--green);}
+.hm-cell.hm-today{outline:1.5px solid var(--accent);outline-offset:1.5px;}
+
+/* ══════════════════════════════════════════════
+   NOTIFICATIONS VIEW
+══════════════════════════════════════════════ */
+.notif-banner{
+  background:linear-gradient(135deg,rgba(91,156,246,.1),rgba(124,104,250,.07));
+  border:1px solid rgba(91,156,246,.25);border-radius:var(--r);
+  padding:14px 16px;margin-bottom:12px;
+}
+.notif-banner-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+.notif-banner-sub{font-size:12px;color:var(--muted);margin-bottom:12px;font-family:var(--mono);line-height:1.6;}
+.notif-enable-btn{
+  padding:11px 20px;background:var(--accent);color:#fff;border:none;
+  border-radius:10px;font-family:var(--sans);font-size:13px;font-weight:700;
+  cursor:pointer;width:100%;transition:opacity .15s,box-shadow .15s;
+  letter-spacing:.02em;
+}
+.notif-enable-btn:hover{box-shadow:0 4px 20px rgba(91,156,246,.45);}
+.notif-enable-btn.granted{background:rgba(16,217,160,.12);color:var(--green);border:1px solid rgba(16,217,160,.35);}
+.ns-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px;}
+.ns-head{
+  padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);
+  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);
+  font-family:var(--mono);
+}
+.ns-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);}
+.ns-row:last-child{border-bottom:none;}
+.ns-row-left{flex:1;}
+.ns-row-title{font-size:13px;font-weight:600;}
+.ns-row-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px;line-height:1.5;}
+.ns-time{
+  background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
+  color:var(--text);font-family:var(--mono);font-size:12px;
+  padding:7px 10px;outline:none;width:90px;text-align:center;
+}
+.ns-time:focus{border-color:var(--accent);}
+
+/* TOGGLE */
+.toggle{position:relative;width:46px;height:25px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-track{
+  position:absolute;inset:0;background:var(--surface3);border-radius:99px;
+  cursor:pointer;transition:background .2s;border:1px solid var(--border2);
+}
+.toggle input:checked+.toggle-track{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;}
+.toggle-thumb{
+  position:absolute;top:3.5px;left:3px;width:18px;height:18px;
+  background:#fff;border-radius:50%;transition:transform .2s;
+  pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.3);
+}
+.toggle input:checked~.toggle-thumb{transform:translateX(21px);}
+.test-notif-btn{
+  width:100%;margin-top:2px;padding:10px;
+  background:rgba(91,156,246,.08);color:var(--accent);
+  border:1px solid rgba(91,156,246,.2);border-radius:10px;
+  font-family:var(--mono);font-size:12px;cursor:pointer;transition:background .15s;
+}
+.test-notif-btn:hover{background:rgba(91,156,246,.15);}
+.ns-msg-input{
+  width:100%;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:8px;color:var(--text);font-family:var(--sans);font-size:12px;
+  padding:8px 10px;outline:none;transition:border-color .15s;
+}
+.ns-msg-input:focus{border-color:var(--accent);}
+.ns-msg-input::placeholder{color:var(--muted);}
+
+/* ── SEC POPUP ── */
+.sec-popup{
+  position:fixed;top:calc(16px + var(--safe-top));left:50%;
+  transform:translateX(-50%) translateY(-160px);
+  background:var(--surface2);border:1px solid var(--border2);border-radius:16px;
+  padding:14px 24px;z-index:990;pointer-events:none;
+  transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+  max-width:300px;width:88%;text-align:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+.sec-popup.show{transform:translateX(-50%) translateY(0);}
+.sec-popup .sp-icon{font-size:24px;}
+.sec-popup .sp-t{font-size:13px;font-weight:700;margin-top:5px;}
+.sec-popup .sp-s{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px;}
+
+/* ══════════════════════════════════════════════
+   EDIT VIEW
+══════════════════════════════════════════════ */
+.edit-view-wrap{animation:fadeUp .3s ease both;}
+.edit-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px;}
+.edit-sec-head{padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.edit-sec-name{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);}
+.edit-row{display:flex;align-items:center;gap:9px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.edit-row:last-child{border-bottom:none;}
+.edit-num{font-family:var(--mono);font-size:11px;color:var(--muted);width:18px;text-align:center;flex-shrink:0;}
+.edit-name-input{
+  flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
+  color:var(--text);font-family:var(--sans);font-size:13px;padding:7px 10px;outline:none;min-width:0;
+}
+.edit-name-input:focus{border-color:var(--accent);background:var(--surface3);}
+.edit-time-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.edit-time-input{
+  background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
+  color:var(--text);font-family:var(--mono);font-size:11px;padding:6px 8px;width:70px;outline:none;text-align:center;
+}
+.edit-time-input:focus{border-color:var(--accent);}
+.edit-time-sep{color:var(--muted);font-size:11px;}
+.edit-save-bar{
+  position:sticky;bottom:calc(var(--nav-h) + var(--safe-bottom));
+  background:rgba(6,9,18,.96);backdrop-filter:blur(12px);
+  border-top:1px solid var(--border2);padding:12px 16px;
+  display:flex;gap:10px;z-index:40;
+}
+.save-btn{
+  flex:1;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;border:none;border-radius:11px;font-family:var(--sans);font-size:14px;
+  font-weight:700;cursor:pointer;transition:opacity .15s,box-shadow .15s;letter-spacing:.02em;
+}
+.save-btn:hover{box-shadow:0 4px 20px rgba(91,156,246,.4);}
+.save-btn:active{opacity:.88;}
+.cancel-btn{
+  padding:13px 18px;background:var(--surface2);color:var(--muted2);
+  border:1px solid var(--border2);border-radius:11px;font-family:var(--sans);font-size:14px;cursor:pointer;
+}
+.cancel-btn:active{background:var(--surface3);}
+.shift-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;}
+.shift-card-title{font-size:13px;font-weight:700;margin-bottom:6px;}
+.shift-card-sub{font-size:12px;color:var(--muted);margin-bottom:12px;font-family:var(--mono);}
+.shift-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.shift-label{font-size:12px;color:var(--muted);font-family:var(--mono);}
+.shift-input{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:13px;padding:8px 10px;width:80px;outline:none;text-align:center;}
+.shift-input:focus{border-color:var(--accent);}
+.shift-apply-btn{padding:9px 16px;background:rgba(91,156,246,.12);color:var(--accent);border:1px solid rgba(91,156,246,.25);border-radius:8px;font-family:var(--mono);font-size:12px;cursor:pointer;transition:all .15s;}
+.shift-apply-btn:hover{background:rgba(91,156,246,.22);}
+
+/* ══════════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════════ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;
+  animation:fadeOverlay .2s ease;
+}
+@keyframes fadeOverlay{from{background:transparent}}
+.modal-sheet{
+  background:var(--surface);border-radius:20px 20px 0 0;
+  border:1px solid var(--border2);width:100%;max-width:700px;
+  padding:20px 20px calc(24px + var(--safe-bottom));
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;letter-spacing:-.2px;}
+.modal-close{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;}
+.modal-close:hover{background:var(--surface2);}
+.modal-label{font-size:10px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;}
+.modal-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:14px;padding:11px 13px;outline:none;margin-bottom:14px;}
+.modal-input:focus{border-color:var(--accent);}
+.modal-time-row{display:flex;gap:10px;margin-bottom:16px;}
+.modal-time-group{flex:1;}
+.modal-time-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:14px;padding:11px 13px;outline:none;text-align:center;}
+.modal-time-input:focus{border-color:var(--accent);}
+.modal-save-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:12px;font-family:var(--sans);font-size:15px;font-weight:700;cursor:pointer;letter-spacing:.02em;}
+.modal-save-btn:active{opacity:.88;}
+.modal-shift-hint{font-size:11px;color:var(--muted);font-family:var(--mono);text-align:center;margin-top:10px;line-height:1.5;}
+
+/* ══════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════ */
+#toast{
+  position:fixed;bottom:calc(var(--nav-h) + var(--safe-bottom) + 10px);
+  left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:99px;padding:10px 20px;font-family:var(--mono);font-size:12px;
+  color:var(--text);pointer-events:none;z-index:999;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px;}
+
+/* ── DESKTOP ── */
+@media(min-width:600px){
+  .wrapper{padding:26px 24px 28px;}
+  .greeting,.view-title{font-size:26px;}
+  .task-row,.edit-row{padding:12px 18px;}
+  .stats-row{grid-template-columns:repeat(4,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- ── VIEW: TODAY ── -->
+<div id="view-today" class="view active">
+  <div class="wrapper">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="day-chip" id="day-chip">MONDAY</div>
+        <div class="greeting">Good <em id="greet-part">morning</em>,<br>Viku</div>
+        <div class="date-sub" id="date-sub">—</div>
+      </div>
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 76 76">
+          <defs>
+            <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#5b9cf6"/>
+              <stop offset="100%" stop-color="#7c68fa"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-bg" cx="38" cy="38" r="30"/>
+          <circle class="ring-fg" id="ring-fg" cx="38" cy="38" r="30"
+            stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+          <text class="ring-txt" id="ring-txt" x="38" y="38">0%</text>
+        </svg>
+        <div class="ring-lbl">Today</div>
+      </div>
+    </div>
+
+    <!-- Alarm Control Banner -->
+    <div class="alarm-bar alarm-on" id="alarm-bar">
+      <div class="alarm-bar-left">
+        <div class="alarm-icon" id="alarm-icon">🔔</div>
+        <div class="alarm-bar-text">
+          <div class="alarm-bar-title">Task Alarms</div>
+          <div class="alarm-bar-sub" id="alarm-bar-sub">Alarms active — tap to pause</div>
+        </div>
+      </div>
+      <button class="alarm-toggle-btn on" id="alarm-toggle-btn" onclick="toggleAlarms()">
+        <span class="alarm-toggle-dot"></span>
+        <span id="alarm-toggle-label">ON</span>
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row" id="stats-row"></div>
+
+    <!-- Current task -->
+    <div id="cur-card">
+      <div class="cur-lbl"><span class="cur-live"></span>Right now</div>
+      <div class="cur-txt" id="cur-txt">—</div>
+      <div class="cur-time" id="cur-time">—</div>
+    </div>
+
+    <!-- All done -->
+    <div id="done-banner">
+      <div class="bang">🎉</div>
+      <div class="bang-t">Day Complete!</div>
+      <div class="bang-s">All tasks done. Streak saved. Rest well.</div>
+    </div>
+
+    <div id="sections-container"></div>
+
+    <!-- Streak calendar -->
+    <div class="streak-sec">
+      <div class="streak-title">
+        <span>Last 28 Days</span>
+        <div class="streak-badge" id="streak-display">🔥 0 days</div>
+      </div>
+      <div class="cal-grid" id="cal-grid">
+        <div class="cal-lbl">M</div><div class="cal-lbl">T</div><div class="cal-lbl">W</div>
+        <div class="cal-lbl">T</div><div class="cal-lbl">F</div><div class="cal-lbl">S</div><div class="cal-lbl">S</div>
+      </div>
+    </div>
+
+    <div class="bottom-row">
+      <button class="reset-btn" onclick="confirmReset()">↺ Reset today</button>
+      <button class="reset-btn" id="sync-btn" onclick="manualSync()" style="color:var(--accent);border-color:rgba(91,156,246,.3);">☁️ Sync</button>
+      <div class="quote-txt" id="quote-txt"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW: TRENDS ── -->
+<div id="view-trends" class="view">
+  <div class="wrapper">
+    <div class="view-header">
+      <div class="day-chip">TRENDS</div>
+      <div class="view-title">Progress Over Time</div>
+      <div class="view-sub">Last 30 days · Updates daily</div>
+    </div>
+    <div id="trend-summary" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;animation:fadeUp .35s .05s ease both;"></div>
+    <div class="trend-card" style="animation:fadeUp .35s .07s ease both;">
+      <div class="trend-card-head"><div class="trend-card-title">Daily Completion %</div><div class="trend-card-sub">Last 30 days</div></div>
+      <div style="position:relative;height:160px;"><canvas id="chart-line"></canvas></div>
+    </div>
+    <div class="trend-card" style="animation:fadeUp .35s .1s ease both;">
+      <div class="trend-card-head"><div class="trend-card-title">Weekly Tasks Done</div><div class="trend-card-sub">Tasks completed per week</div></div>
+      <div style="position:relative;height:150px;"><canvas id="chart-bar"></canvas></div>
+    </div>
+    <div class="trend-card" style="animation:fadeUp .35s .13s ease both;">
+      <div class="trend-card-head"><div class="trend-card-title">Section Breakdown</div><div class="trend-card-sub">All-time completion by section</div></div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="position:relative;width:130px;height:130px;flex-shrink:0;"><canvas id="chart-donut"></canvas></div>
+        <div id="donut-legend" style="flex:1;display:flex;flex-direction:column;gap:7px;"></div>
+      </div>
+    </div>
+    <div class="trend-card" style="animation:fadeUp .35s .16s ease both;">
+      <div class="trend-card-head"><div class="trend-card-title">Best Days of Week</div><div class="trend-card-sub">Average completion % by weekday</div></div>
+      <div id="weekday-bars" style="display:flex;flex-direction:column;gap:7px;margin-top:4px;"></div>
+    </div>
+    <div class="trend-card" style="animation:fadeUp .35s .19s ease both;margin-bottom:8px;">
+      <div class="trend-card-head"><div class="trend-card-title">Task Completion Rates</div><div class="trend-card-sub">How often you finish each task (last 30 days)</div></div>
+      <div id="task-rates" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW: MONTHLY REVIEW ── -->
+<div id="view-review" class="view">
+  <div class="wrapper">
+    <div class="view-header">
+      <div class="day-chip">MONTHLY REVIEW</div>
+      <div class="view-title">Wins & Weak Points</div>
+      <div class="view-sub" id="review-sub">Analyzing your data...</div>
+    </div>
+    <div class="mr-month-nav">
+      <button class="mr-nav-btn" id="review-prev-btn" onclick="reviewPrevMonth()">&#9664; Prev</button>
+      <div class="mr-month-title" id="review-month-title">—</div>
+      <button class="mr-nav-btn" id="review-next-btn" onclick="reviewNextMonth()">Next &#9654;</button>
+    </div>
+    <div class="mr-hero" id="review-hero"></div>
+    <div class="mr-week-grid" id="review-weeks"></div>
+    <div class="mr-card" style="animation-delay:.08s">
+      <div class="mr-card-head">
+        <div class="mr-card-title">📅 Month Heatmap</div>
+        <div class="mr-card-sub" id="review-heatmap-sub"></div>
+      </div>
+      <div class="day-heatmap" id="review-heatmap">
+        <div class="hm-lbl">M</div><div class="hm-lbl">T</div><div class="hm-lbl">W</div>
+        <div class="hm-lbl">T</div><div class="hm-lbl">F</div><div class="hm-lbl">S</div><div class="hm-lbl">S</div>
+      </div>
+    </div>
+    <div class="mr-card" style="animation-delay:.12s">
+      <div class="mr-card-head">
+        <div class="mr-card-title">⚠️ Most Skipped Tasks</div>
+        <div class="mr-card-sub">Your weak points this month</div>
+      </div>
+      <div id="review-skipped"></div>
+    </div>
+    <div class="mr-card" style="animation-delay:.16s;margin-bottom:8px;">
+      <div class="mr-card-head">
+        <div class="mr-card-title">💡 Smart Insights</div>
+        <div class="mr-card-sub">Personalized takeaways</div>
+      </div>
+      <div class="insight-list" id="review-insights"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW: NOTIFICATIONS ── -->
+<div id="view-notifs" class="view">
+  <div class="wrapper">
+    <div class="view-header">
+      <div class="day-chip">NOTIFICATIONS</div>
+      <div class="view-title">Reminder Settings</div>
+      <div class="view-sub" id="notif-perm-status">Checking permission...</div>
+    </div>
+
+    <div class="notif-banner" style="animation:fadeUp .35s .05s ease both;">
+      <div class="notif-banner-title" id="notif-banner-title">🔔 Enable Notifications</div>
+      <div class="notif-banner-sub" id="notif-banner-sub">Tap below to allow OS-level popups — works even when Chrome is minimized on Android</div>
+      <button class="notif-enable-btn" id="notif-enable-btn" onclick="requestPermission()">Tap to Enable Notifications</button>
+    </div>
+
+    <!-- Quick alarm master toggle -->
+    <div class="ns-card" style="animation:fadeUp .35s .07s ease both;">
+      <div class="ns-head">⚡ Master Alarm Switch</div>
+      <div class="ns-row">
+        <div class="ns-row-left">
+          <div class="ns-row-title">All Task Alarms</div>
+          <div class="ns-row-sub" id="master-alarm-sub">Pause or resume all task alarms instantly</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="tog-master-alarm" checked onchange="onMasterAlarmToggle()">
+          <div class="toggle-track"></div><div class="toggle-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="ns-card" style="animation:fadeUp .35s .09s ease both;">
+      <div class="ns-head">⏰ Per-Task Notifications</div>
+      <div class="ns-row">
+        <div class="ns-row-left">
+          <div class="ns-row-title">Task start alert</div>
+          <div class="ns-row-sub">Fires at the task's scheduled start time</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="tog-pertask-start" checked onchange="saveNotifSettings()">
+          <div class="toggle-track"></div><div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="ns-row">
+        <div class="ns-row-left">
+          <div class="ns-row-title">✅ Completion check at task end</div>
+          <div class="ns-row-sub">Fires at end time — tap "Yes done!" to auto-tick it</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="tog-pertask-end" checked onchange="saveNotifSettings()">
+          <div class="toggle-track"></div><div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="ns-row">
+        <div class="ns-row-left">
+          <div class="ns-row-title">💬 Motivational quote in notification</div>
+          <div class="ns-row-sub">Adds a short quote below the task name</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="tog-motivate" checked onchange="saveNotifSettings()">
+          <div class="toggle-track"></div><div class="toggle-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="ns-card" style="animation:fadeUp .35s .11s ease both;">
+      <div class="ns-head">📊 Section Summaries</div>
+      <div class="ns-row">
+        <div class="ns-row-left">
+          <div class="ns-row-title">Section summary notifications</div>
+          <div class="ns-row-sub">After each section ends — "Morning: 4/5 done"</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="tog-secsummary" checked onchange="saveNotifSettings()">
+          <div class="toggle-track"></div><div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="ns-row">
+        <div class="ns-row-left">
+          <div class="ns-row-title">📣 In-app section complete popup</div>
+          <div class="ns-row-sub">Banner inside app when all tasks in a section done</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="tog-secpopup" checked onchange="saveNotifSettings()">
+          <div class="toggle-track"></div><div class="toggle-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="ns-card" style="animation:fadeUp .35s .13s ease both;">
+      <div class="ns-head">📅 Daily Summary Reminders</div>
+      <div class="ns-row">
+        <div class="ns-row-left">
+          <div class="ns-row-title">🌅 Morning Briefing</div>
+          <div class="ns-row-sub">Total tasks + first task of the day</div>
+        </div>
+        <input class="ns-time" type="time" id="nt-morning" value="07:00" onchange="saveNotifSettings()">
+        <label class="toggle">
+          <input type="checkbox" id="tog-morning" checked onchange="saveNotifSettings()">
+          <div class="toggle-track"></div><div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="ns-row">
+        <div class="ns-row-left">
+          <div class="ns-row-title">🌆 Evening Summary</div>
+          <div class="ns-row-sub">How many tasks completed today</div>
+        </div>
+        <input class="ns-time" type="time" id="nt-evening" value="20:00" onchange="saveNotifSettings()">
+        <label class="toggle">
+          <input type="checkbox" id="tog-evening" checked onchange="saveNotifSettings()">
+          <div class="toggle-track"></div><div class="toggle-thumb"></div>
+        </label>
+      </div>
+    </div>
+
+    <div class="ns-card" style="animation:fadeUp .35s .15s ease both;">
+      <div class="ns-head">⚙️ Custom Reminders</div>
+      <div class="ns-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div class="ns-row-left"><div class="ns-row-title">Custom Reminder 1</div></div>
+          <input class="ns-time" type="time" id="nt-custom1" value="" onchange="saveNotifSettings()">
+          <label class="toggle">
+            <input type="checkbox" id="tog-custom1" onchange="saveNotifSettings()">
+            <div class="toggle-track"></div><div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <input class="ns-msg-input" type="text" id="nt-custommsg1" placeholder="Message (e.g. Focus time!)" oninput="saveNotifSettings()">
+      </div>
+      <div class="ns-row" style="flex-direction:column;align-items:stretch;gap:8px;border-bottom:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div class="ns-row-left"><div class="ns-row-title">Custom Reminder 2</div></div>
+          <input class="ns-time" type="time" id="nt-custom2" value="" onchange="saveNotifSettings()">
+          <label class="toggle">
+            <input type="checkbox" id="tog-custom2" onchange="saveNotifSettings()">
+            <div class="toggle-track"></div><div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <input class="ns-msg-input" type="text" id="nt-custommsg2" placeholder="Message (e.g. Review notes!)" oninput="saveNotifSettings()">
+      </div>
+    </div>
+
+    <div class="ns-card" style="animation:fadeUp .35s .17s ease both;">
+      <div class="ns-head">Actions</div>
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px;">
+        <button class="notif-enable-btn" onclick="applyAndSchedule()">💾 Save &amp; Schedule All Notifications</button>
+        <button class="test-notif-btn" onclick="sendTestStart()">🧪 Test — Start Notification</button>
+        <button class="test-notif-btn" onclick="sendTestEnd()">🧪 Test — Completion Check (with Yes/No)</button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:8px;animation:fadeUp .35s .19s ease both;">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;">📱 How it works on Android Chrome</div>
+      <div style="font-size:12px;color:var(--muted);font-family:var(--mono);line-height:2;">
+        1. Enable notifications above (one time only)<br>
+        2. Open app each morning → notifications auto-schedule<br>
+        3. At each task's start time → popup fires on your phone<br>
+        4. At each task's end time → "Did you complete this?" popup<br>
+        &nbsp;&nbsp;→ Tap <strong style="color:var(--green);">✅ Yes, done!</strong> → task auto-ticks<br>
+        &nbsp;&nbsp;→ Tap <strong style="color:var(--red);">❌ Not yet</strong> → task stays unchecked<br>
+        5. Section and daily summaries fire at your set times<br><br>
+        <strong style="color:var(--amber);">⚠️ Open the app once per day</strong> to re-schedule
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW: EDIT SCHEDULE ── -->
+<div id="view-edit" class="view">
+  <div class="wrapper edit-view-wrap">
+    <div class="view-header">
+      <div class="day-chip">EDIT SCHEDULE</div>
+      <div class="view-title">Customize Tasks &amp; Times</div>
+      <div class="view-sub">Changes save when you tap Save</div>
+    </div>
+    <div class="shift-card">
+      <div class="shift-card-title">⏰ Shift All Task Times</div>
+      <div class="shift-card-sub">Move your whole schedule forward or back in one tap</div>
+      <div class="shift-row">
+        <span class="shift-label">Start first task at:</span>
+        <input class="shift-input" type="time" id="shift-to-input" value="07:00">
+        <button class="shift-apply-btn" onclick="applyShift()">Apply Shift</button>
+      </div>
+    </div>
+    <div id="edit-sections-container"></div>
+  </div>
+  <div class="edit-save-bar">
+    <button class="cancel-btn" onclick="cancelEdit()">Cancel</button>
+    <button class="save-btn" onclick="saveEdit()">Save Changes</button>
+  </div>
+</div>
+
+<!-- ── SYNC SETUP MODAL ── -->
+<div id="sync-modal" style="display:none;">
+  <div class="modal-overlay" style="align-items:center;">
+    <div class="modal-sheet" style="border-radius:20px;max-width:400px;margin:16px;">
+      <div class="modal-title">☁️ Cloud Sync Setup</div>
+      <div style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:16px;line-height:1.7;">
+        Enter your GitHub credentials once.<br>
+        Saved locally — never uploaded to any server.
+      </div>
+      <div class="modal-label">Gist ID</div>
+      <input class="modal-input" id="sync-gist-id" type="text" placeholder="40b91c0975bf7eda...">
+      <div class="modal-label">GitHub Token</div>
+      <input class="modal-input" id="sync-token" type="password" placeholder="ghp_...">
+      <div style="display:flex;gap:10px;">
+        <button class="cancel-btn" onclick="closeSyncModal()" style="flex:1;">Skip</button>
+        <button class="modal-save-btn" onclick="saveSyncConfig()" style="flex:2;">Save & Sync</button>
+      </div>
+      <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-align:center;margin-top:10px;line-height:1.6;">
+        ⚠️ Token stored only on this device<br>
+        Never shared or uploaded anywhere
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BOTTOM NAV ── -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-today" onclick="switchView('today')">
+    <span class="nav-icon">📋</span>
+    <span class="nav-lbl">Today</span>
+  </button>
+  <button class="nav-btn" id="nav-trends" onclick="switchView('trends')">
+    <span class="nav-icon">📈</span>
+    <span class="nav-lbl">Trends</span>
+  </button>
+  <button class="nav-btn" id="nav-review" onclick="switchView('review')">
+    <span class="nav-icon">📊</span>
+    <span class="nav-lbl">Review</span>
+  </button>
+  <button class="nav-btn" id="nav-notifs" onclick="switchView('notifs')">
+    <span class="nav-icon">🔔</span>
+    <span class="nav-lbl">Alerts</span>
+  </button>
+  <button class="nav-btn" id="nav-edit" onclick="switchView('edit')">
+    <span class="nav-icon">✏️</span>
+    <span class="nav-lbl">Edit</span>
+  </button>
+</nav>
+
+<!-- ── MODAL ── -->
+<div id="modal" style="display:none;">
+  <div class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-sheet" onclick="event.stopPropagation()">
+      <div class="modal-title">
+        Edit Task
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <div class="modal-label">Task name</div>
+      <input class="modal-input" id="modal-name" type="text" placeholder="Task name">
+      <div class="modal-label">Time range</div>
+      <div class="modal-time-row">
+        <div class="modal-time-group">
+          <div class="modal-label">Start</div>
+          <input class="modal-time-input" id="modal-start" type="time">
+        </div>
+        <div class="modal-time-group">
+          <div class="modal-label">End</div>
+          <input class="modal-time-input" id="modal-end" type="time">
+        </div>
+      </div>
+      <button class="modal-save-btn" onclick="saveModal()">Save Task</button>
+      <div class="modal-shift-hint">Tip: Use "Shift all times" in the Edit tab to move your whole day at once</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div class="sec-popup" id="sec-popup">
+  <div class="sp-icon" id="sp-icon">🎉</div>
+  <div class="sp-t" id="sp-t">Section Complete!</div>
+  <div class="sp-s" id="sp-s">Morning — 5/5 done</div>
+</div>
+
+<script>
+// ── DEFAULT SCHEDULE ─────────────────────────────────────────────────────────
+const DEFAULT_SCHEDULE = [
+  {id:"morning",title:"Morning",color:"#5b9cf6",tasks:[
+    {id:"t1", time:"07:00",timeEnd:"07:00",text:"Wake Up"},
+    {id:"t2", time:"07:00",timeEnd:"07:30",text:"Morning Routine / Stretching"},
+    {id:"t3", time:"07:30",timeEnd:"08:00",text:"Book Reading"},
+    {id:"t4", time:"08:00",timeEnd:"09:00",text:"Exercise + Meditation"},
+    {id:"t5", time:"09:00",timeEnd:"09:30",text:"Breakfast"},
+  ]},
+  {id:"learn1",title:"Learning Block 1",color:"#7c68fa",tasks:[
+    {id:"t6", time:"09:30",timeEnd:"10:30",text:"English Communication Practice"},
+    {id:"t7", time:"10:30",timeEnd:"11:00",text:"Read Code / Lecture Notes"},
+    {id:"t8", time:"11:00",timeEnd:"12:00",text:"Kaggle Practice"},
+    {id:"t9", time:"12:00",timeEnd:"13:00",text:"ML Experiment / Coding"},
+    {id:"t10",time:"13:00",timeEnd:"13:30",text:"Jupyter Notebook Practice"},
+  ]},
+  {id:"afternoon",title:"Afternoon",color:"#10d9a0",tasks:[
+    {id:"t11",time:"13:30",timeEnd:"14:30",text:"Lunch + Rest"},
+    {id:"t12",time:"14:30",timeEnd:"16:00",text:"SQL Learning (45 min + 45 min practice)"},
+    {id:"t13",time:"16:00",timeEnd:"17:30",text:"Power BI Learning (45 min + 45 min practice)"},
+    {id:"t14",time:"17:30",timeEnd:"18:00",text:"GitHub Practice"},
+    {id:"t15",time:"18:00",timeEnd:"18:30",text:"LinkedIn / Portfolio Update"},
+    {id:"t16",time:"18:30",timeEnd:"19:30",text:"ML Project Work"},
+  ]},
+  {id:"evening",title:"Evening",color:"#f5a623",tasks:[
+    {id:"t17",time:"19:30",timeEnd:"20:30",text:"Dinner + Relax"},
+    {id:"t18",time:"20:30",timeEnd:"21:30",text:"Movie / Current Affairs"},
+    {id:"t19",time:"21:30",timeEnd:"22:30",text:"Free Time / Hobby"},
+    {id:"t20",time:"22:30",timeEnd:"23:00",text:"Book Reading"},
+    {id:"t21",time:"23:00",timeEnd:"23:30",text:"Night Routine"},
+    {id:"t22",time:"23:30",timeEnd:"23:59",text:"Sleep"},
+  ]},
+];
+
+const QUOTES = [
+  "Data is the new oil. Refine it daily.",
+  "Every model you build compounds your skill.",
+  "Consistency > intensity. Show up.",
+  "Code today. Deploy tomorrow.",
+  "One Kaggle notebook a day.",
+  "Your GitHub is your resume.",
+  "ML is learned by doing, not watching.",
+];
+
+// ── KEYS ─────────────────────────────────────────────────────────────────────
+const todayKey   = () => "ait_day_" + new Date().toISOString().slice(0,10);
+const SCHED_KEY  = "ait_schedule";
+const STREAK_KEY = "ait_streak";
+const NOTIF_KEY  = "ait_notif_settings";
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let schedule = [];
+let checkState = {};
+let editDraft  = [];
+let modalTaskRef = null;
+
+function loadAll(){
+  try{ schedule = JSON.parse(localStorage.getItem(SCHED_KEY)) || deepCopy(DEFAULT_SCHEDULE); }
+  catch(e){ schedule = deepCopy(DEFAULT_SCHEDULE); }
+  try{ checkState = JSON.parse(localStorage.getItem(todayKey())) || {}; }
+  catch(e){ checkState = {}; }
+}
+function saveChecks(){ try{ localStorage.setItem(todayKey(), JSON.stringify(checkState)); }catch(e){} updateStreak(); }
+function saveSchedule(){
+  try{ localStorage.setItem(SCHED_KEY, JSON.stringify(schedule)); }catch(e){}
+  if(isSyncConfigured()){
+    syncToGist().catch(e=>console.warn("Schedule sync failed:",e));
+  }
+}
+function deepCopy(o){ return JSON.parse(JSON.stringify(o)); }
+function allTasks(){ return schedule.flatMap(s=>s.tasks); }
+
+// ── STREAK ────────────────────────────────────────────────────────────────────
+function getSD(){ try{ return JSON.parse(localStorage.getItem(STREAK_KEY)||"{}"); }catch(e){ return {}; } }
+function updateStreak(){
+  const at = allTasks(); const done = at.filter(t=>checkState[t.id]).length;
+  const sd = getSD(); const today = new Date().toISOString().slice(0,10);
+  if(done/at.length >= 0.8) sd[today]=true; else delete sd[today];
+  try{ localStorage.setItem(STREAK_KEY, JSON.stringify(sd)); }catch(e){}
+}
+function calcStreak(){
+  const sd=getSD(); let n=0; const d=new Date();
+  for(let i=0;i<365;i++){
+    const k=d.toISOString().slice(0,10);
+    if(sd[k]){n++;d.setDate(d.getDate()-1);}
+    else if(i>0) break;
+    else d.setDate(d.getDate()-1);
+  }
+  return n;
+}
+
+// ── TIME HELPERS ──────────────────────────────────────────────────────────────
+function toMins(t){ const [h,m]=t.split(":").map(Number); return h*60+(m||0); }
+function fromMins(m){ const h=Math.floor(m/60)%24,mn=m%60; return String(h).padStart(2,"0")+":"+String(mn).padStart(2,"0"); }
+function fmt12(t){
+  const [h,m]=t.split(":").map(Number);
+  const ap=h>=12?"PM":"AM"; const hh=h%12||12;
+  return hh+":"+(m<10?"0":"")+m+" "+ap;
+}
+function nowMins(){ const n=new Date(); return n.getHours()*60+n.getMinutes(); }
+function getCurrentTask(){
+  const now=nowMins();
+  for(const s of schedule) for(const t of s.tasks)
+    if(toMins(t.time)<=now && now<toMins(t.timeEnd)) return t;
+  return null;
+}
+
+// ── ALARM TOGGLE ─────────────────────────────────────────────────────────────
+function getAlarmsEnabled(){
+  const s = getNotifSettings();
+  return s.alarmsEnabled !== false; // default ON
+}
+function toggleAlarms(){
+  const s = getNotifSettings();
+  const current = s.alarmsEnabled !== false;
+  s.alarmsEnabled = !current;
+  try{ localStorage.setItem(NOTIF_KEY, JSON.stringify(s)); }catch(e){}
+  updateAlarmUI();
+  if(s.alarmsEnabled){
+    scheduleNotifications();
+    showToast("🔔 Alarms turned ON");
+  } else {
+    cancelAllNotifications();
+    showToast("🔕 Alarms paused");
+  }
+}
+function updateAlarmUI(){
+  const on = getAlarmsEnabled();
+  const bar = document.getElementById("alarm-bar");
+  const btn = document.getElementById("alarm-toggle-btn");
+  const sub = document.getElementById("alarm-bar-sub");
+  const icon = document.getElementById("alarm-icon");
+  const lbl = document.getElementById("alarm-toggle-label");
+  const masterTog = document.getElementById("tog-master-alarm");
+  const masterSub = document.getElementById("master-alarm-sub");
+
+  if(bar){ bar.className = "alarm-bar " + (on ? "alarm-on" : "alarm-off"); }
+  if(btn){ btn.className = "alarm-toggle-btn " + (on ? "on" : "off"); }
+  if(sub){ sub.textContent = on ? "Alarms active — tap to pause" : "Alarms paused — tap to resume"; }
+  if(icon){ icon.textContent = on ? "🔔" : "🔕"; }
+  if(lbl){ lbl.textContent = on ? "ON" : "OFF"; }
+  if(masterTog){ masterTog.checked = on; }
+  if(masterSub){ masterSub.textContent = on ? "All task alarms are active" : "All task alarms are paused"; }
+}
+function onMasterAlarmToggle(){
+  const on = document.getElementById("tog-master-alarm").checked;
+  const s = getNotifSettings();
+  s.alarmsEnabled = on;
+  try{ localStorage.setItem(NOTIF_KEY, JSON.stringify(s)); }catch(e){}
+  updateAlarmUI();
+  if(on){ scheduleNotifications(); showToast("🔔 Alarms turned ON"); }
+  else{ cancelAllNotifications(); showToast("🔕 Alarms paused"); }
+}
+function cancelAllNotifications(){
+  // Clear page timers
+  pageTimers.forEach(clearTimeout); pageTimers=[];
+  // Notify SW to clear
+  if(swReg?.active) swReg.active.postMessage({type:"SCHEDULE_NOTIFICATIONS", payload:{tasks:[],sections:[],checkedIds:[],perTaskStart:false,perTaskEnd:false,sectionSummaries:false,morningTime:null,eveningTime:null,customTime1:null,customTime2:null,motivate:false,quotes:[],appUrl:window.location.href,totalTasks:0,firstTask:""}});
+}
+
+// ── RENDER TODAY ──────────────────────────────────────────────────────────────
+function renderHeader(){
+  const d=new Date();
+  const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  document.getElementById("day-chip").textContent = DAYS[d.getDay()].toUpperCase()+" · "+MONTHS[d.getMonth()]+" "+d.getDate();
+  document.getElementById("date-sub").textContent = MONTHS[d.getMonth()]+" "+d.getDate()+", "+d.getFullYear();
+  const h=d.getHours();
+  document.getElementById("greet-part").textContent = h<12?"morning":h<17?"afternoon":"evening";
+  document.getElementById("quote-txt").textContent = QUOTES[d.getDay()%QUOTES.length];
+}
+
+function renderRing(pct){
+  const circ=188.5, off=circ-(pct/100)*circ;
+  document.getElementById("ring-fg").style.strokeDashoffset=off;
+  document.getElementById("ring-txt").textContent=Math.round(pct)+"%";
+}
+
+function renderPills(){
+  const at=allTasks(); const done=at.filter(t=>checkState[t.id]).length;
+  const pct=at.length?done/at.length*100:0;
+  renderRing(pct);
+  const streak=calcStreak();
+  const data=[
+    {c:"var(--accent)",n:done,l:"done"},
+    {c:"var(--accent2)",n:at.length-done,l:"left"},
+    {c:"var(--amber)",n:streak,l:"streak"},
+    {c:"var(--green)",n:Math.round(pct)+"%",l:"complete"},
+  ];
+  document.getElementById("stats-row").innerHTML=data.map(p=>
+    `<div class="stat-card"><div class="stat-val" style="color:${p.c}">${p.n}</div><div class="stat-lbl">${p.l}</div></div>`
+  ).join("");
+  document.getElementById("streak-display").innerHTML="🔥 "+streak+" day"+(streak!==1?"s":"");
+  document.getElementById("done-banner").style.display=(done===at.length&&at.length>0)?"block":"none";
+}
+
+function renderCurTask(){
+  const cur=getCurrentTask();
+  const card=document.getElementById("cur-card");
+  if(cur&&!checkState[cur.id]){
+    card.style.display="block";
+    document.getElementById("cur-txt").textContent=cur.text;
+    document.getElementById("cur-time").textContent=fmt12(cur.time)+" – "+fmt12(cur.timeEnd);
+  } else { card.style.display="none"; }
+}
+
+function renderSections(){
+  const now=nowMins(); const cur=getCurrentTask();
+  const cont=document.getElementById("sections-container");
+  cont.innerHTML="";
+  schedule.forEach((sec,si)=>{
+    const secDone=sec.tasks.filter(t=>checkState[t.id]).length;
+    const secPct=Math.round(secDone/sec.tasks.length*100);
+    const allDone=secDone===sec.tasks.length;
+    const isEarly=toMins(sec.tasks[sec.tasks.length-1].timeEnd)<now-60;
+    const collapsed=allDone&&isEarly;
+    const chevId="schev-"+sec.id;
+    const bodyId="sbody-"+sec.id;
+
+    const block=document.createElement("div");
+    block.className="sec-block";
+    block.style.animationDelay=(0.03+si*0.05)+"s";
+    block.innerHTML=`
+      <div class="sec-head" onclick="toggleSec('${bodyId}','${chevId}')">
+        <div class="sec-name-wrap">
+          <div class="sec-dot" style="background:${sec.color}"></div>
+          <div class="sec-name" style="color:${sec.color}">${sec.title}</div>
+        </div>
+        <div class="sec-meta">
+          <span class="sec-count">${secDone}/${sec.tasks.length}</span>
+          <div class="sec-bar-wrap"><div class="sec-bar" style="width:${secPct}%;background:${sec.color}"></div></div>
+          <span id="${chevId}" class="sec-chevron ${collapsed?'':'open'}">▼</span>
+        </div>
+      </div>`;
+
+    const body=document.createElement("div");
+    body.className="sec-body"; body.id=bodyId;
+    body.style.maxHeight=collapsed?"0px":"2000px";
+
+    sec.tasks.forEach(task=>{
+      const done=!!checkState[task.id];
+      const isCur=cur&&cur.id===task.id;
+      const row=document.createElement("div");
+      row.className="task-row"+(done?" done":"")+(isCur?" cur-hl":"");
+      row.innerHTML=`
+        <div class="cb${done?" chk":""}">
+          <svg width="11" height="9" viewBox="0 0 11 9" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,4.5 4,7.5 10,1"/></svg>
+        </div>
+        <span class="task-txt">${task.text}</span>
+        <span class="task-time">${fmt12(task.time)}–${fmt12(task.timeEnd)}</span>
+        <button class="edit-task-btn" title="Edit task">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>`;
+      row.querySelector(".edit-task-btn").addEventListener("click",e=>{e.stopPropagation();openModal(task);});
+      row.addEventListener("click",e=>{
+        if(e.target.closest(".edit-task-btn")) return;
+        toggle(task.id);
+      });
+      body.appendChild(row);
+    });
+
+    block.appendChild(body);
+    cont.appendChild(block);
+  });
+}
+
+function renderCalendar(){
+  const sd=getSD(); const grid=document.getElementById("cal-grid");
+  while(grid.children.length>7) grid.removeChild(grid.lastChild);
+  const today=new Date(); const todayStr=today.toISOString().slice(0,10);
+  const start=new Date(today); start.setDate(today.getDate()-27);
+  const dow=(start.getDay()+6)%7; start.setDate(start.getDate()-dow);
+  for(let i=0;i<28;i++){
+    const d=new Date(start); d.setDate(start.getDate()+i);
+    const k=d.toISOString().slice(0,10);
+    const cell=document.createElement("div");
+    cell.className="cal-cell";
+    if(d>today) cell.classList.add("future");
+    else if(sd[k]) cell.classList.add("hit");
+    if(k===todayStr) cell.classList.add("today");
+    grid.appendChild(cell);
+  }
+}
+
+function renderToday(){
+  renderHeader();
+  renderPills();
+  renderCurTask();
+  renderSections();
+  renderCalendar();
+  updateAlarmUI();
+}
+
+// ── INTERACTIONS ──────────────────────────────────────────────────────────────
+function toggle(id){
+  checkState[id]=!checkState[id];
+  saveChecks();
+  renderPills(); renderCurTask(); renderSections(); renderCalendar();
+  const task=allTasks().find(t=>t.id===id);
+  if(checkState[id]){ showToast("✓ "+task.text.slice(0,32)); checkSectionComplete(id); }
+}
+
+function toggleSec(bodyId,chevId){
+  const b=document.getElementById(bodyId), c=document.getElementById(chevId);
+  const col=b.style.maxHeight==="0px";
+  b.style.maxHeight=col?"2000px":"0px";
+  c.className="sec-chevron "+(col?"open":"");
+}
+
+function confirmReset(){
+  if(confirm("Reset today's progress?")){ checkState={}; saveChecks(); renderToday(); showToast("Day reset. Fresh start!"); }
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openModal(task){
+  modalTaskRef=task;
+  document.getElementById("modal-name").value=task.text;
+  document.getElementById("modal-start").value=task.time;
+  document.getElementById("modal-end").value=task.timeEnd;
+  document.getElementById("modal").style.display="block";
+}
+function closeModal(e){
+  if(e&&e.target!==e.currentTarget) return;
+  document.getElementById("modal").style.display="none";
+  modalTaskRef=null;
+}
+function saveModal(){
+  if(!modalTaskRef) return;
+  const name=document.getElementById("modal-name").value.trim();
+  const start=document.getElementById("modal-start").value;
+  const end=document.getElementById("modal-end").value;
+  if(!name){ showToast("Task name can't be empty"); return; }
+  for(const s of schedule) for(const t of s.tasks){
+    if(t.id===modalTaskRef.id){ t.text=name; t.time=start; t.timeEnd=end; break; }
+  }
+  saveSchedule();
+  document.getElementById("modal").style.display="none";
+  modalTaskRef=null;
+  renderToday();
+  showToast("Task updated!");
+}
+
+// ── VIEW SWITCHING ────────────────────────────────────────────────────────────
+function switchView(v){
+  document.querySelectorAll(".view").forEach(el=>el.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(el=>el.classList.remove("active"));
+  document.getElementById("view-"+v).classList.add("active");
+  document.getElementById("nav-"+v).classList.add("active");
+  if(v==="edit") renderEditView();
+  if(v==="trends") renderTrends();
+  if(v==="review") renderMonthlyReview();
+  if(v==="notifs"){ loadNotifSettings(); updatePermissionUI(); updateAlarmUI(); }
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+// ── EDIT VIEW ─────────────────────────────────────────────────────────────────
+function renderEditView(){
+  editDraft=deepCopy(schedule);
+  const cont=document.getElementById("edit-sections-container");
+  cont.innerHTML="";
+  editDraft.forEach(sec=>{
+    const block=document.createElement("div");
+    block.className="edit-section";
+    block.innerHTML=`<div class="edit-sec-head"><div class="edit-sec-name" style="color:${sec.color}">${sec.title}</div></div>`;
+    sec.tasks.forEach((task,ti)=>{
+      const row=document.createElement("div");
+      row.className="edit-row";
+      row.innerHTML=`
+        <span class="edit-num">${ti+1}</span>
+        <input class="edit-name-input" type="text" value="${task.text}" placeholder="Task name"
+          oninput="editDraft.find(s=>s.id==='${sec.id}').tasks[${ti}].text=this.value">
+        <div class="edit-time-wrap">
+          <input class="edit-time-input" type="time" value="${task.time}"
+            oninput="editDraft.find(s=>s.id==='${sec.id}').tasks[${ti}].time=this.value">
+          <span class="edit-time-sep">–</span>
+          <input class="edit-time-input" type="time" value="${task.timeEnd}"
+            oninput="editDraft.find(s=>s.id==='${sec.id}').tasks[${ti}].timeEnd=this.value">
+        </div>`;
+      block.appendChild(row);
+    });
+    cont.appendChild(block);
+  });
+}
+function saveEdit(){ schedule=deepCopy(editDraft); saveSchedule(); switchView("today"); renderToday(); showToast("Schedule saved!"); }
+function cancelEdit(){ editDraft=[]; switchView("today"); }
+
+function applyShift(){
+  const targetTime=document.getElementById("shift-to-input").value;
+  if(!targetTime){ showToast("Pick a start time first"); return; }
+  const allT=editDraft.flatMap(s=>s.tasks);
+  const firstStart=Math.min(...allT.map(t=>toMins(t.time)));
+  const delta=toMins(targetTime)-firstStart;
+  editDraft.forEach(sec=>{ sec.tasks.forEach(t=>{ t.time=fromMins(toMins(t.time)+delta); t.timeEnd=fromMins(toMins(t.timeEnd)+delta); }); });
+  renderEditView();
+  showToast("All times shifted to start at "+fmt12(targetTime));
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let toastT;
+function showToast(msg){
+  const el=document.getElementById("toast");
+  el.textContent=msg; el.classList.add("show");
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>el.classList.remove("show"),2300);
+}
+
+// ── NOTIFICATION SYSTEM ───────────────────────────────────────────────────────
+const NOTIF_QUOTES = [
+  "Every line of code is a step forward.",
+  "Data science is a marathon, not a sprint.",
+  "Show up. Build. Repeat.",
+  "Your future self will thank you.",
+  "Consistency compounds — keep going.",
+  "One Kaggle notebook a day.",
+  "Your GitHub streak is your proof of work.",
+  "Small daily improvements lead to stunning results.",
+];
+let swReg = null;
+
+function getNotifSettings(){ try{ return JSON.parse(localStorage.getItem(NOTIF_KEY)||"{}"); }catch(e){ return {}; } }
+
+function loadNotifSettings(){
+  try{
+    const s = getNotifSettings();
+    const fields = {
+      "nt-morning":"morningTime","nt-evening":"eveningTime",
+      "nt-custom1":"customTime1","nt-custom2":"customTime2",
+      "nt-custommsg1":"customMsg1","nt-custommsg2":"customMsg2",
+    };
+    Object.entries(fields).forEach(([elId,key])=>{ if(s[key]) document.getElementById(elId).value=s[key]; });
+    const bools=["morning","evening","custom1","custom2","pertask-start","pertask-end","motivate","secsummary","secpopup"];
+    bools.forEach(k=>{ if(k in s){ const el=document.getElementById("tog-"+k); if(el) el.checked=s[k]; }});
+    const masterEl=document.getElementById("tog-master-alarm");
+    if(masterEl) masterEl.checked = s.alarmsEnabled !== false;
+  }catch(e){}
+}
+
+function saveNotifSettings(){
+  try{
+    const existing = getNotifSettings();
+    const s={
+      ...existing,
+      morningTime:  document.getElementById("nt-morning").value,
+      eveningTime:  document.getElementById("nt-evening").value,
+      customTime1:  document.getElementById("nt-custom1").value,
+      customTime2:  document.getElementById("nt-custom2").value,
+      customMsg1:   document.getElementById("nt-custommsg1").value,
+      customMsg2:   document.getElementById("nt-custommsg2").value,
+      morning:      document.getElementById("tog-morning").checked,
+      evening:      document.getElementById("tog-evening").checked,
+      custom1:      document.getElementById("tog-custom1").checked,
+      custom2:      document.getElementById("tog-custom2").checked,
+      "pertask-start": document.getElementById("tog-pertask-start").checked,
+      "pertask-end":   document.getElementById("tog-pertask-end").checked,
+      motivate:     document.getElementById("tog-motivate").checked,
+      secsummary:   document.getElementById("tog-secsummary").checked,
+      secpopup:     document.getElementById("tog-secpopup").checked,
+    };
+    localStorage.setItem(NOTIF_KEY, JSON.stringify(s));
+  }catch(e){}
+}
+
+async function registerSW(){
+  if(!("serviceWorker" in navigator)) return null;
+  try{
+    swReg = await navigator.serviceWorker.register("sw.js");
+    navigator.serviceWorker.addEventListener("message", e=>{
+      if(e.data?.type==="MARK_DONE") markDoneFromNotif(e.data.taskId);
+    });
+    return swReg;
+  }catch(e){ console.warn("SW failed:",e); return null; }
+}
+
+function markDoneFromNotif(taskId){
+  if(!taskId) return;
+  checkState[taskId]=true;
+  saveChecks();
+  renderPills(); renderCurTask(); renderSections(); renderCalendar();
+  checkSectionComplete(taskId);
+  showToast("✅ Task marked done from notification!");
+}
+
+function updatePermissionUI(){
+  if(!("Notification" in window)){
+    document.getElementById("notif-perm-status").textContent="Not supported in this browser";
+    return;
+  }
+  const perm=Notification.permission;
+  const btn=document.getElementById("notif-enable-btn");
+  if(perm==="granted"){
+    document.getElementById("notif-perm-status").textContent="✅ Notifications enabled and active";
+    document.getElementById("notif-banner-title").textContent="🟢 Notifications are ON";
+    document.getElementById("notif-banner-sub").textContent="Reminders will fire at your scheduled times today";
+    btn.textContent="✅ Enabled — Tap to Re-schedule";
+    btn.classList.add("granted");
+  } else if(perm==="denied"){
+    document.getElementById("notif-perm-status").textContent="❌ Blocked — enable in Chrome Settings > Site Settings > Notifications";
+    btn.textContent="Blocked — Open Chrome Settings";
+    btn.disabled=true;
+  } else {
+    document.getElementById("notif-perm-status").textContent="Tap below to allow notifications";
+  }
+}
+
+async function requestPermission(){
+  if(!("Notification" in window)){ showToast("Not supported here"); return; }
+  if(Notification.permission==="denied"){ showToast("Go to Chrome Settings → Site Settings → Notifications → Allow"); return; }
+  const perm=await Notification.requestPermission();
+  updatePermissionUI();
+  if(perm==="granted"){ showToast("Notifications enabled!"); await registerSW(); scheduleNotifications(); }
+}
+
+function scheduleNotifications(){
+  if(Notification.permission!=="granted") return;
+  if(!getAlarmsEnabled()){ cancelAllNotifications(); return; }
+  const s=getNotifSettings();
+  const at=allTasks();
+  const checkedIds=at.filter(t=>checkState[t.id]).map(t=>t.id);
+  const tasks=at.map(task=>{
+    const [sh,sm]=task.time.split(":").map(Number);
+    const [eh,em]=task.timeEnd.split(":").map(Number);
+    const sec=schedule.find(sec=>sec.tasks.some(t=>t.id===task.id));
+    return {id:task.id,text:task.text,startH:sh,startM:sm,endH:eh,endM:em,section:sec?.title||""};
+  });
+  const sections=schedule.map(sec=>{
+    const lastTask=sec.tasks[sec.tasks.length-1];
+    const [eh,em]=lastTask.timeEnd.split(":").map(Number);
+    const icons={morning:"🌅",learn1:"🧠",afternoon:"⚡",evening:"🌙"};
+    return {id:sec.id,title:sec.title,icon:icons[sec.id]||"📊",taskIds:sec.tasks.map(t=>t.id),summaryH:eh,summaryM:em};
+  });
+  const payload={
+    tasks, sections, checkedIds,
+    perTaskStart: s["pertask-start"]!==false,
+    perTaskEnd:   s["pertask-end"]!==false,
+    sectionSummaries: s.secsummary!==false,
+    morningTime: s.morning!==false ? (s.morningTime||"07:00") : null,
+    eveningTime: s.evening!==false ? (s.eveningTime||"20:00") : null,
+    customTime1: s.custom1&&s.customTime1 ? s.customTime1 : null,
+    customTime2: s.custom2&&s.customTime2 ? s.customTime2 : null,
+    customMsg1: s.customMsg1||"",
+    customMsg2: s.customMsg2||"",
+    motivate: s.motivate!==false,
+    quotes: NOTIF_QUOTES,
+    appUrl: window.location.href,
+    totalTasks: at.length,
+    firstTask: at[0]?.text||"",
+  };
+  if(swReg?.active){ swReg.active.postMessage({type:"SCHEDULE_NOTIFICATIONS",payload}); }
+  else { scheduleInPage(payload); }
+}
+
+let pageTimers=[];
+function scheduleInPage(p){
+  pageTimers.forEach(clearTimeout); pageTimers=[];
+  const now=Date.now();
+  function msAt(h,m){ const d=new Date(); d.setHours(h,m,0,0); return d.getTime(); }
+  function fmt(h,m){ const ap=h>=12?"PM":"AM",hh=h%12||12; return hh+":"+(m<10?"0":"")+m+" "+ap; }
+  const q=()=>p.motivate?("\n"+p.quotes[Math.floor(Math.random()*p.quotes.length)]):"";
+  p.tasks.forEach(task=>{
+    if(p.perTaskStart&&!p.checkedIds.includes(task.id)){
+      const d=msAt(task.startH,task.startM)-now;
+      if(d>0&&d<20*3600000) pageTimers.push(setTimeout(()=>{
+        new Notification("⏰ "+task.text,{body:fmt(task.startH,task.startM)+" – "+fmt(task.endH,task.endM)+q(),tag:"s"+task.id});
+      },d));
+    }
+    if(p.perTaskEnd&&!p.checkedIds.includes(task.id)){
+      const d=msAt(task.endH,task.endM)-now;
+      if(d>0&&d<20*3600000) pageTimers.push(setTimeout(()=>{
+        new Notification("✅ Did you complete this?",{body:task.text+"\n"+fmt(task.startH,task.startM)+" – "+fmt(task.endH,task.endM),tag:"e"+task.id});
+      },d));
+    }
+  });
+  [{t:p.morningTime,icon:"🌅",title:"Good morning, Viku!",body:`${p.totalTasks} tasks today. First: ${p.firstTask}`},
+   {t:p.eveningTime,icon:"🌆",title:"Evening Summary",body:`Done today: ${p.checkedIds.length}/${p.totalTasks} tasks`},
+   {t:p.customTime1,icon:"⏰",title:"Reminder",body:p.customMsg1||"Check your tracker."},
+   {t:p.customTime2,icon:"⏰",title:"Reminder",body:p.customMsg2||"Check your tracker."},
+  ].forEach(({t,icon,title,body})=>{
+    if(!t) return;
+    const [h,m]=t.split(":").map(Number);
+    const d=msAt(h,m)-now;
+    if(d>0&&d<20*3600000) pageTimers.push(setTimeout(()=>new Notification(icon+" "+title,{body,tag:t}),d));
+  });
+}
+
+async function applyAndSchedule(){
+  saveNotifSettings();
+  if(Notification.permission!=="granted"){ await requestPermission(); return; }
+  if(!swReg) await registerSW();
+  scheduleNotifications();
+  showToast("All notifications scheduled for today! 🔔");
+}
+
+async function sendTestStart(){
+  if(Notification.permission!=="granted"){ await requestPermission(); return; }
+  new Notification("⏰ Kaggle Practice",{body:"9:30 AM – 10:30 AM  |  Learning Block 1\nShow up. Build. Repeat.",tag:"test-start"});
+  showToast("Test start notification sent!");
+}
+
+async function sendTestEnd(){
+  if(Notification.permission!=="granted"){ await requestPermission(); return; }
+  if(swReg?.active){
+    new Notification("✅ Did you complete this task?",{body:"Kaggle Practice\n9:30 AM – 10:30 AM\n(Tap Yes to auto-tick it)",tag:"test-end"});
+  } else {
+    new Notification("✅ Did you complete this task?",{body:"Kaggle Practice\n9:30 AM – 10:30 AM",tag:"test-end"});
+  }
+  showToast("Test completion check sent!");
+}
+
+// ── SECTION POPUP ─────────────────────────────────────────────────────────────
+let secPopupTimer;
+function checkSectionComplete(taskId){
+  const s=getNotifSettings();
+  if(s.secpopup===false) return;
+  const sec=schedule.find(sec=>sec.tasks.some(t=>t.id===taskId));
+  if(!sec) return;
+  const done=sec.tasks.filter(t=>checkState[t.id]).length;
+  if(done!==sec.tasks.length) return;
+  const icons={morning:"🌅",learn1:"🧠",afternoon:"⚡",evening:"🌙"};
+  document.getElementById("sp-icon").textContent=icons[sec.id]||"🎉";
+  document.getElementById("sp-t").textContent=sec.title+" Complete!";
+  document.getElementById("sp-s").textContent=done+"/"+sec.tasks.length+" tasks — section done 🔥";
+  const popup=document.getElementById("sec-popup");
+  popup.classList.add("show");
+  clearTimeout(secPopupTimer);
+  secPopupTimer=setTimeout(()=>popup.classList.remove("show"),4000);
+}
+
+function checkUrlMarkDone(){
+  const params=new URLSearchParams(window.location.search);
+  const taskId=params.get("markdone");
+  if(taskId){ markDoneFromNotif(taskId); history.replaceState({},"",window.location.pathname); }
+}
+
+// ── GIST CLOUD SYNC ───────────────────────────────────────────────────────────
+const SYNC_KEY = "ait_sync_config";
+
+function getSyncConfig(){
+  try{ return JSON.parse(localStorage.getItem(SYNC_KEY)||"{}"); }catch(e){ return {}; }
+}
+
+function isSyncConfigured(){
+  const c = getSyncConfig();
+  return !!(c.gistId && c.token);
+}
+
+function openSyncModal(){
+  const c = getSyncConfig();
+  if(c.gistId) document.getElementById("sync-gist-id").value = c.gistId;
+  if(c.token)  document.getElementById("sync-token").value  = c.token;
+  document.getElementById("sync-modal").style.display = "block";
+}
+
+function closeSyncModal(){
+  document.getElementById("sync-modal").style.display = "none";
+}
+
+async function saveSyncConfig(){
+  const gistId = document.getElementById("sync-gist-id").value.trim();
+  const token  = document.getElementById("sync-token").value.trim();
+  if(!gistId || !token){ showToast("Please enter both Gist ID and Token"); return; }
+  try{
+    localStorage.setItem(SYNC_KEY, JSON.stringify({gistId, token}));
+    closeSyncModal();
+    showToast("☁️ Config saved! Syncing...");
+    await syncFromGist();
+    await syncToGist();
+    showToast("✅ Sync complete!");
+  }catch(e){ showToast("❌ Sync failed: "+e.message); }
+}
+
+// Build the full data snapshot to push to Gist
+function buildSyncPayload(){
+  const data = {};
+  // Today's checks + last 90 days
+  const d = new Date();
+  for(let i=0;i<90;i++){
+    const dd = new Date(d); dd.setDate(d.getDate()-i);
+    const k = "ait_day_"+dd.toISOString().slice(0,10);
+    const v = localStorage.getItem(k);
+    if(v) data[k] = JSON.parse(v);
+  }
+  // Schedule + streak
+  const sched = localStorage.getItem(SCHED_KEY);
+  const streak = localStorage.getItem(STREAK_KEY);
+  if(sched)  data[SCHED_KEY]  = JSON.parse(sched);
+  if(streak) data[STREAK_KEY] = JSON.parse(streak);
+  data["_lastSync"] = new Date().toISOString();
+  data["_device"]   = navigator.userAgent.includes("Mobile") ? "mobile" : "desktop";
+  return data;
+}
+
+// Push local data → Gist
+async function syncToGist(){
+  const c = getSyncConfig();
+  if(!c.gistId || !c.token) return;
+  const payload = buildSyncPayload();
+  const res = await fetch(`https://api.github.com/gists/${c.gistId}`, {
+    method: "PATCH",
+    headers: {
+      "Authorization": "token "+c.token,
+      "Content-Type":  "application/json",
+    },
+    body: JSON.stringify({
+      files: {
+        "task-tracker-data.json": {
+          content: JSON.stringify(payload, null, 2)
+        }
+      }
+    })
+  });
+  if(!res.ok) throw new Error("Upload failed: "+res.status);
+}
+
+// Pull Gist data → local, merge by most recent
+async function syncFromGist(){
+  const c = getSyncConfig();
+  if(!c.gistId || !c.token) return;
+  const res = await fetch(`https://api.github.com/gists/${c.gistId}`, {
+    headers: { "Authorization": "token "+c.token }
+  });
+  if(!res.ok) throw new Error("Download failed: "+res.status);
+  const json = await res.json();
+  const file = json.files?.["task-tracker-data.json"];
+  if(!file?.content) return;
+  // Safe JSON parse — handle empty or malformed content
+  let remote = {};
+  try{
+    const cleaned = file.content.trim();
+    if(!cleaned || cleaned === "{}" || cleaned === "{}") return; // nothing to pull
+    remote = JSON.parse(cleaned);
+  } catch(e){
+    console.warn("Gist content is not valid JSON, skipping pull:", e);
+    return; // don't crash — just skip the pull
+  }
+  if(!remote || Object.keys(remote).length === 0) return;
+
+  // Merge: for each day key, take whichever has more tasks done
+  Object.entries(remote).forEach(([k, v]) => {
+    if(k.startsWith("ait_day_")){
+      const local = localStorage.getItem(k);
+      if(!local){
+        // No local data — use remote
+        localStorage.setItem(k, JSON.stringify(v));
+      } else {
+        // Both exist — merge by OR (if done on either device, mark done)
+        const localData = JSON.parse(local);
+        const merged = {...v, ...localData};
+        // Keep any task checked on either device
+        Object.keys(v).forEach(tid => { if(v[tid]) merged[tid] = true; });
+        Object.keys(localData).forEach(tid => { if(localData[tid]) merged[tid] = true; });
+        localStorage.setItem(k, JSON.stringify(merged));
+      }
+    }
+    // Schedule — always take remote if it exists
+    if(k === SCHED_KEY){
+      localStorage.setItem(SCHED_KEY, JSON.stringify(v));
+    }
+    // Streak — merge by union
+    if(k === STREAK_KEY){
+      const local = localStorage.getItem(STREAK_KEY);
+      if(!local){
+        localStorage.setItem(STREAK_KEY, JSON.stringify(v));
+      } else {
+        const localSD = JSON.parse(local);
+        const merged = {...v, ...localSD};
+        localStorage.setItem(STREAK_KEY, JSON.stringify(merged));
+      }
+    }
+  });
+}
+
+// Full sync: pull then push
+async function fullSync(silent=false){
+  if(!isSyncConfigured()){
+    openSyncModal(); return;
+  }
+  const btn = document.getElementById("sync-btn");
+  if(btn){ btn.textContent = "☁️ Syncing..."; btn.disabled = true; }
+  try{
+    await syncFromGist();
+    loadAll();
+    renderToday();
+    await syncToGist();
+    const now = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+    if(btn){ btn.textContent = "☁️ Synced "+now; }
+    if(!silent) showToast("✅ Synced across all devices!");
+    setTimeout(()=>{ if(btn){ btn.textContent = "☁️ Sync"; btn.disabled=false; } }, 4000);
+  }catch(e){
+    if(btn){ btn.textContent = "☁️ Sync"; btn.disabled=false; }
+    if(!silent) showToast("❌ Sync failed — check connection");
+    console.error("Sync error:",e);
+  }
+}
+
+function manualSync(){ fullSync(false); }
+
+// Auto sync on app load (silent)
+async function autoSync(){
+  if(!isSyncConfigured()) return;
+  try{
+    await syncFromGist();
+    loadAll();
+    renderToday();
+    await syncToGist();
+    const now = new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"});
+    const btn = document.getElementById("sync-btn");
+    if(btn) btn.textContent = "☁️ Synced "+now;
+    setTimeout(()=>{ const b=document.getElementById("sync-btn"); if(b) b.textContent="☁️ Sync"; },4000);
+  }catch(e){ console.warn("Auto sync failed:",e); }
+}
+
+// Patch saveChecks to also push to Gist after every check
+const _origSaveChecks = saveChecks;
+saveChecks = function(){
+  _origSaveChecks();
+  if(isSyncConfigured()){
+    syncToGist().catch(e=>console.warn("Background sync failed:",e));
+  }
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadAll();
+renderToday();
+checkUrlMarkDone();
+setInterval(()=>{ renderCurTask(); renderSections(); },60000);
+// Auto sync on load
+autoSync();
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── TREND DATA HELPERS ────────────────────────────────────────────────────────
+let chartLine=null, chartBar=null, chartDonut=null;
+function getLast30Keys(){
+  const keys=[]; const d=new Date();
+  for(let i=29;i>=0;i--){ const dd=new Date(d); dd.setDate(d.getDate()-i); keys.push("ait_day_"+dd.toISOString().slice(0,10)); }
+  return keys;
+}
+function getLast30Dates(){
+  const out=[]; const d=new Date();
+  for(let i=29;i>=0;i--){ const dd=new Date(d); dd.setDate(d.getDate()-i); out.push(dd); }
+  return out;
+}
+function getDayData(key){ try{ return JSON.parse(localStorage.getItem(key)||"{}"); }catch(e){ return {}; } }
+function getDayPct(key){
+  const data=getDayData(key); const at=allTasks();
+  if(!at.length) return null;
+  return Math.round(at.filter(t=>data[t.id]).length/at.length*100);
+}
+function hasAnyData(){ return getLast30Keys().some(k=>{ const d=getDayData(k); return Object.keys(d).length>0; }); }
+
+function renderTrends(){
+  if(!hasAnyData()){ renderEmptyTrends(); return; }
+  renderTrendSummary(); renderLineChart(); renderBarChart();
+  renderDonutChart(); renderWeekdayBars(); renderTaskRates();
+}
+function renderEmptyTrends(){
+  document.getElementById("trend-summary").innerHTML=`<div class="tstat"><div class="tstat-val">—</div><div class="tstat-lbl">No data yet</div></div><div class="tstat"><div class="tstat-val">—</div><div class="tstat-lbl">Start checking tasks</div></div>`;
+  ["chart-line","chart-bar","chart-donut"].forEach(id=>{ const c=document.getElementById(id); if(c) c.parentElement.innerHTML=`<div class="empty-state">Complete tasks to see trends here</div>`; });
+  document.getElementById("weekday-bars").innerHTML=`<div class="empty-state">No data yet</div>`;
+  document.getElementById("task-rates").innerHTML=`<div class="empty-state">No data yet</div>`;
+  document.getElementById("donut-legend").innerHTML="";
+}
+function renderTrendSummary(){
+  const keys=getLast30Keys();
+  const pcts=keys.map(getDayPct).filter(p=>p!==null&&p>0);
+  const avg=pcts.length?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
+  const streak=calcStreak(); const best=pcts.length?Math.max(...pcts):0; const activeDays=pcts.length;
+  const thisWeek=keys.slice(23).map(getDayPct).filter(p=>p!==null);
+  const lastWeek=keys.slice(16,23).map(getDayPct).filter(p=>p!==null);
+  const twAvg=thisWeek.length?Math.round(thisWeek.reduce((a,b)=>a+b,0)/thisWeek.length):0;
+  const lwAvg=lastWeek.length?Math.round(lastWeek.reduce((a,b)=>a+b,0)/lastWeek.length):0;
+  const delta=twAvg-lwAvg;
+  const deltaStr=delta===0?"— same as last week":(delta>0?"▲ "+delta+"% vs last week":"▼ "+Math.abs(delta)+"% vs last week");
+  const deltaClass=delta>0?"up":delta<0?"dn":"";
+  document.getElementById("trend-summary").innerHTML=`
+    <div class="tstat"><div class="tstat-val">${avg}%</div><div class="tstat-lbl">Avg completion</div><div class="tstat-delta ${deltaClass}">${deltaStr}</div></div>
+    <div class="tstat"><div class="tstat-val">${streak}</div><div class="tstat-lbl">Current streak</div><div class="tstat-delta up">${activeDays} active days</div></div>
+    <div class="tstat"><div class="tstat-val">${best}%</div><div class="tstat-lbl">Best day</div><div class="tstat-delta">Last 30 days</div></div>
+    <div class="tstat"><div class="tstat-val">${activeDays}</div><div class="tstat-lbl">Days tracked</div><div class="tstat-delta">of last 30</div></div>`;
+}
+function chartDefaults(){
+  return {
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{
+      backgroundColor:"#131d30",borderColor:"rgba(255,255,255,0.11)",borderWidth:1,
+      titleColor:"#eef2ff",bodyColor:"#7a8daf",
+      titleFont:{family:"'JetBrains Mono',monospace",size:11},
+      bodyFont:{family:"'JetBrains Mono',monospace",size:11},
+      padding:10,cornerRadius:8,
+    }},
+    scales:{
+      x:{grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#5a6a8a",font:{family:"'JetBrains Mono',monospace",size:9}}},
+      y:{grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#5a6a8a",font:{family:"'JetBrains Mono',monospace",size:9}}},
+    }
+  };
+}
+function renderLineChart(){
+  const keys=getLast30Keys(); const dates=getLast30Dates();
+  const labels=dates.map(d=>{ const m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]; return m+" "+d.getDate(); });
+  const sparseLabels=labels.map((l,i)=>i%5===0?l:"");
+  const data=keys.map(getDayPct);
+  const canvas=document.getElementById("chart-line"); if(!canvas) return;
+  if(chartLine){ chartLine.destroy(); chartLine=null; }
+  chartLine=new Chart(canvas,{type:"line",data:{labels:sparseLabels,datasets:[{data,borderColor:"#5b9cf6",backgroundColor:"rgba(91,156,246,0.07)",borderWidth:2,pointRadius:data.map(v=>v&&v>0?3:0),pointBackgroundColor:"#5b9cf6",pointBorderColor:"#060912",pointBorderWidth:1.5,fill:true,tension:0.4,spanGaps:true}]},options:{...chartDefaults(),scales:{x:{grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#5a6a8a",font:{family:"'JetBrains Mono',monospace",size:9},maxRotation:0}},y:{min:0,max:100,grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#5a6a8a",font:{family:"'JetBrains Mono',monospace",size:9},callback:v=>v+"%"}}},plugins:{...chartDefaults().plugins,tooltip:{...chartDefaults().plugins.tooltip,callbacks:{label:ctx=>ctx.parsed.y!==null?ctx.parsed.y+"% complete":"No data"}}}}});
+}
+function renderBarChart(){
+  const weeksData=[]; const d=new Date();
+  for(let w=5;w>=0;w--){
+    const ws=new Date(d); ws.setDate(d.getDate()-w*7-6);
+    let total=0;
+    for(let i=0;i<=6;i++){
+      const dd=new Date(ws); dd.setDate(ws.getDate()+i);
+      const data=getDayData("ait_day_"+dd.toISOString().slice(0,10)); const at=allTasks();
+      if(Object.keys(data).length>0&&at.length) total+=at.filter(t=>data[t.id]).length;
+    }
+    weeksData.push({label:"W"+(6-w),total});
+  }
+  const canvas=document.getElementById("chart-bar"); if(!canvas) return;
+  if(chartBar){ chartBar.destroy(); chartBar=null; }
+  chartBar=new Chart(canvas,{type:"bar",data:{labels:weeksData.map(w=>w.label),datasets:[{data:weeksData.map(w=>w.total),backgroundColor:weeksData.map((_,i)=>i===weeksData.length-1?"#5b9cf6":"rgba(91,156,246,0.3)"),borderRadius:6,borderSkipped:false}]},options:{...chartDefaults(),scales:{x:{grid:{display:false},ticks:{color:"#5a6a8a",font:{family:"'JetBrains Mono',monospace",size:10}}},y:{grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#5a6a8a",font:{family:"'JetBrains Mono',monospace",size:9}},beginAtZero:true}},plugins:{...chartDefaults().plugins,tooltip:{...chartDefaults().plugins.tooltip,callbacks:{label:ctx=>ctx.parsed.y+" tasks done"}}}}});
+}
+function renderDonutChart(){
+  const secTotals=schedule.map(sec=>{
+    let total=0,done=0;
+    getLast30Keys().forEach(k=>{ const data=getDayData(k); if(!Object.keys(data).length) return; sec.tasks.forEach(t=>{ total++; if(data[t.id]) done++; }); });
+    return {name:sec.title,color:sec.color,pct:total?Math.round(done/total*100):0};
+  });
+  const canvas=document.getElementById("chart-donut"); if(!canvas) return;
+  if(chartDonut){ chartDonut.destroy(); chartDonut=null; }
+  chartDonut=new Chart(canvas,{type:"doughnut",data:{labels:secTotals.map(s=>s.name),datasets:[{data:secTotals.map(s=>s.pct||1),backgroundColor:secTotals.map(s=>s.color),borderColor:"#0d1526",borderWidth:3,hoverOffset:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{display:false},tooltip:{backgroundColor:"#131d30",borderColor:"rgba(255,255,255,0.11)",borderWidth:1,titleColor:"#eef2ff",bodyColor:"#7a8daf",titleFont:{family:"'JetBrains Mono',monospace",size:11},bodyFont:{family:"'JetBrains Mono',monospace",size:11},padding:10,cornerRadius:8,callbacks:{label:ctx=>ctx.label+": "+secTotals[ctx.dataIndex].pct+"%"}}}}});
+  document.getElementById("donut-legend").innerHTML=secTotals.map(s=>`<div style="display:flex;align-items:center;gap:7px;"><div style="width:8px;height:8px;border-radius:2px;background:${s.color};flex-shrink:0;"></div><span style="font-size:11px;color:var(--muted2);flex:1;">${s.name}</span><span style="font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text);">${s.pct}%</span></div>`).join("");
+}
+function renderWeekdayBars(){
+  const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const buckets=DAYS.map(()=>({sum:0,count:0}));
+  const keys=getLast30Keys(); const dates=getLast30Dates();
+  keys.forEach((k,i)=>{ const data=getDayData(k); const at=allTasks(); if(!Object.keys(data).length||!at.length) return; const dow=(dates[i].getDay()+6)%7; buckets[dow].sum+=at.filter(t=>data[t.id]).length/at.length*100; buckets[dow].count++; });
+  const avgs=buckets.map(b=>b.count?Math.round(b.sum/b.count):0); const maxAvg=Math.max(...avgs,1);
+  document.getElementById("weekday-bars").innerHTML=avgs.map((a,i)=>`<div class="wday-row"><span class="wday-name">${DAYS[i]}</span><div class="wday-bar-wrap"><div class="wday-bar-fill" style="width:${Math.round(a/maxAvg*100)}%;background:${a>=70?"#10d9a0":a>=40?"#5b9cf6":"#7c68fa"}"></div></div><span class="wday-pct">${a}%</span></div>`).join("");
+}
+function renderTaskRates(){
+  const keys=getLast30Keys(); const at=allTasks();
+  const rates=at.map(task=>{ let done=0,active=0; keys.forEach(k=>{ const data=getDayData(k); if(!Object.keys(data).length) return; active++; if(data[task.id]) done++; }); return {text:task.text,pct:active?Math.round(done/active*100):0}; });
+  rates.sort((a,b)=>b.pct-a.pct);
+  const colorFor=p=>p>=80?"#10d9a0":p>=50?"#5b9cf6":p>=25?"#f5a623":"#f4567a";
+  document.getElementById("task-rates").innerHTML=rates.map(r=>`<div class="trate-row"><span class="trate-name" title="${r.text}">${r.text}</span><div class="trate-bar-wrap"><div class="trate-bar-fill" style="width:${r.pct}%;background:${colorFor(r.pct)}"></div></div><span class="trate-pct">${r.pct}%</span></div>`).join("");
+}
+
+// ── MONTHLY REVIEW ────────────────────────────────────────────────────────────
+let reviewYear  = new Date().getFullYear();
+let reviewMonth = new Date().getMonth();
+
+function reviewPrevMonth(){ reviewMonth--; if(reviewMonth<0){reviewMonth=11;reviewYear--;} renderMonthlyReview(); }
+function reviewNextMonth(){ reviewMonth++; if(reviewMonth>11){reviewMonth=0;reviewYear++;} renderMonthlyReview(); }
+
+function getMonthDayKeys(year,month){
+  const keys=[],dates=[],days=new Date(year,month+1,0).getDate();
+  for(let d=1;d<=days;d++){ const dt=new Date(year,month,d); keys.push("ait_day_"+dt.toISOString().slice(0,10)); dates.push(dt); }
+  return {keys,dates,daysInMonth:days};
+}
+
+function renderMonthlyReview(){
+  const MN=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const todayObj=new Date();
+  const isCur=reviewYear===todayObj.getFullYear()&&reviewMonth===todayObj.getMonth();
+  const isMax=(reviewYear>todayObj.getFullYear())||(reviewYear===todayObj.getFullYear()&&reviewMonth>=todayObj.getMonth());
+  document.getElementById("review-prev-btn").disabled=reviewYear<2024;
+  document.getElementById("review-next-btn").disabled=isMax;
+  document.getElementById("review-month-title").textContent=MN[reviewMonth]+" "+reviewYear;
+  document.getElementById("review-sub").textContent=isCur?"This month · Updates as you track":MN[reviewMonth]+" "+reviewYear+" · Historical";
+
+  const {keys,dates}=getMonthDayKeys(reviewYear,reviewMonth);
+  const at=allTasks();
+  if(!at.length){_reviewEmpty();return;}
+
+  const today=todayObj.toISOString().slice(0,10);
+  const dayPcts=[],activeDays=[];
+  keys.forEach((k,i)=>{
+    const ds=dates[i].toISOString().slice(0,10);
+    if(ds>today){dayPcts.push(null);return;}
+    const data=getDayData(k);
+    if(!Object.keys(data).length){dayPcts.push(0);return;}
+    const pct=Math.round(at.filter(t=>data[t.id]).length/at.length*100);
+    dayPcts.push(pct);
+    activeDays.push({dateStr:ds,pct,data});
+  });
+
+  const validPcts=dayPcts.filter(p=>p!==null&&p>0);
+  const avg=validPcts.length?Math.round(validPcts.reduce((a,b)=>a+b,0)/validPcts.length):0;
+  const daysTracked=activeDays.length;
+  const perfectDays=activeDays.filter(d=>d.pct===100).length;
+  const failDays=activeDays.filter(d=>d.pct<30).length;
+  const grade=avg>=85?"S":avg>=70?"A":avg>=50?"B":"C";
+  const gradeMsg={S:"Exceptional 🔥",A:"Great work 💪",B:"Keep pushing ⚡",C:"Room to grow 📈"}[grade];
+
+  document.getElementById("review-hero").innerHTML=`
+    <div class="mr-hero-top">
+      <div>
+        <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:5px;">Monthly Score</div>
+        <div style="font-size:17px;font-weight:700;letter-spacing:-.3px;">${MN[reviewMonth]} ${reviewYear}</div>
+        <div style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:4px;">${gradeMsg}</div>
+      </div>
+      <div class="mr-score-wrap">
+        <div class="mr-score">${avg}%</div>
+        <div class="mr-score-lbl">avg daily</div>
+        <div class="mr-grade grade-${grade.toLowerCase()}">${grade} Grade</div>
+      </div>
+    </div>
+    <div class="mr-stat-row">
+      <div class="mr-mini-stat"><div class="mr-mini-val" style="color:var(--accent);">${daysTracked}</div><div class="mr-mini-lbl">Days Tracked</div></div>
+      <div class="mr-mini-stat"><div class="mr-mini-val" style="color:var(--green);">${perfectDays}</div><div class="mr-mini-lbl">Perfect Days</div></div>
+      <div class="mr-mini-stat"><div class="mr-mini-val" style="color:var(--red);">${failDays}</div><div class="mr-mini-lbl">Under 30%</div></div>
+    </div>`;
+
+  // Weekly analysis
+  const weekMap={};
+  dates.forEach((dt,i)=>{
+    if(dayPcts[i]===null) return;
+    const dow=(dt.getDay()+6)%7;
+    const ws=new Date(dt); ws.setDate(dt.getDate()-dow);
+    const wk=ws.toISOString().slice(0,10);
+    if(!weekMap[wk]) weekMap[wk]={start:ws,pcts:[],dates:[]};
+    weekMap[wk].pcts.push(dayPcts[i]); weekMap[wk].dates.push(dt);
+  });
+  const weeks=Object.values(weekMap).filter(w=>w.pcts.filter(p=>p>0).length>0);
+  const fmtD=d=>{const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return M[d.getMonth()]+" "+d.getDate();};
+  weeks.forEach(w=>{
+    const valid=w.pcts.filter(p=>p>0);
+    w.avg=valid.length?Math.round(valid.reduce((a,b)=>a+b,0)/valid.length):0;
+    w.label=fmtD(w.start)+" – "+fmtD(w.dates[w.dates.length-1]);
+  });
+  weeks.sort((a,b)=>a.start-b.start);
+  weeks.forEach((w,i)=>w.weekLabel="Week "+(i+1));
+
+  let bestWeek=null,worstWeek=null;
+  if(weeks.length){ bestWeek=weeks.reduce((a,b)=>b.avg>a.avg?b:a); worstWeek=weeks.reduce((a,b)=>b.avg<a.avg?b:a); }
+
+  const weekCard=(w,type)=>{
+    if(!w) return `<div class="mr-week-card ${type}" style="display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--muted);">No data yet</div>`;
+    return `<div class="mr-week-card ${type}">
+      <div class="mr-wk-badge">${type==="best"?"🏆":"📉"}</div>
+      <div class="mr-wk-label ${type}">${type==="best"?"Best Week":"Worst Week"}</div>
+      <div class="mr-wk-title">${w.weekLabel}</div>
+      <div class="mr-wk-dates">${w.label}</div>
+      <div class="mr-wk-pct ${type}">${w.avg}%</div>
+      <div class="mr-wk-sub">${w.pcts.filter(p=>p>0).length} active days</div>
+    </div>`;
+  };
+  document.getElementById("review-weeks").innerHTML=weekCard(bestWeek,"best")+weekCard(worstWeek,"worst");
+
+  // Heatmap
+  const hm=document.getElementById("review-heatmap");
+  while(hm.children.length>7) hm.removeChild(hm.lastChild);
+  const firstDow=(dates[0].getDay()+6)%7;
+  for(let i=0;i<firstDow;i++){ const e=document.createElement("div");e.className="hm-cell hm-empty";hm.appendChild(e); }
+  dates.forEach((dt,i)=>{
+    const cell=document.createElement("div");
+    const ds=dt.toISOString().slice(0,10);
+    if(ds>today){ cell.className="hm-cell hm-future"; }
+    else{
+      const p=dayPcts[i]??0;
+      const lvl=p===100?"100":p>=75?"75":p>=50?"50":p>=25?"25":"0";
+      cell.className="hm-cell hm-"+lvl;
+      cell.title=dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" — "+p+"%";
+    }
+    if(ds===today) cell.classList.add("hm-today");
+    hm.appendChild(cell);
+  });
+  const doneCount=activeDays.filter(d=>d.pct>=80).length;
+  document.getElementById("review-heatmap-sub").textContent=daysTracked?`${doneCount} strong days (≥80%) out of ${daysTracked} tracked`:"No data this month";
+
+  // Most skipped
+  const skipData=at.map(task=>{
+    let skipped=0,present=0;
+    keys.forEach((k,i)=>{
+      const ds=dates[i].toISOString().slice(0,10);
+      if(ds>today) return;
+      const data=getDayData(k);
+      if(!Object.keys(data).length) return;
+      present++; if(!data[task.id]) skipped++;
+    });
+    return {text:task.text,skipPct:present?Math.round(skipped/present*100):0};
+  });
+  skipData.sort((a,b)=>b.skipPct-a.skipPct);
+  const top5=skipData.slice(0,5);
+  const maxSkip=top5.length?top5[0].skipPct:1;
+  const cSkip=p=>p>=70?"var(--red)":p>=45?"var(--amber)":"var(--accent)";
+
+  document.getElementById("review-skipped").innerHTML=daysTracked
+    ? top5.map((r,i)=>`<div class="skip-item">
+        <div class="skip-rank">${["🥇","🥈","🥉","4","5"][i]}</div>
+        <div class="skip-name">${r.text}</div>
+        <div class="skip-bar-col">
+          <span class="skip-pct" style="color:${cSkip(r.skipPct)}">${r.skipPct}% skip</span>
+          <div class="skip-bar-track"><div class="skip-bar-fill" style="width:${maxSkip?Math.round(r.skipPct/maxSkip*100):0}%;background:${cSkip(r.skipPct)}"></div></div>
+        </div>
+      </div>`).join("")
+    : `<div class="empty-state">No data recorded this month yet</div>`;
+
+  // Insights
+  const insights=[];
+  if(worstWeek&&bestWeek&&bestWeek!==worstWeek) insights.push({icon:"📉",text:`Your <strong>${worstWeek.weekLabel}</strong> (${worstWeek.label}) was your toughest at <strong>${worstWeek.avg}%</strong> — ${bestWeek.avg-worstWeek.avg}% below your best week. Investigate what changed.`});
+  if(top5.length&&top5[0].skipPct>=30) insights.push({icon:"⚠️",text:`<strong>"${top5[0].text}"</strong> is your #1 weak point — skipped <strong>${top5[0].skipPct}%</strong> of tracked days. Consider adjusting the time slot or breaking it into smaller steps.`});
+  if(perfectDays>=5) insights.push({icon:"🔥",text:`Amazing — <strong>${perfectDays} perfect days</strong> this month! Those 100% days prove you can do it consistently.`});
+  else if(perfectDays===0&&daysTracked>=5) insights.push({icon:"🎯",text:`No perfect days yet this month. Try for at least one — it builds confidence and shows you what's possible.`});
+  if(daysTracked>=10){
+    const consPct=Math.round(activeDays.filter(d=>d.pct>=60).length/daysTracked*100);
+    if(consPct>=70) insights.push({icon:"✅",text:`<strong>${consPct}% of your tracked days</strong> hit 60%+. Consistency like this is the #1 predictor of long-term growth.`});
+    else insights.push({icon:"📊",text:`Only <strong>${consPct}% of days</strong> hit 60%+ completion. Even 60% every day beats 100% twice a week.`});
+  }
+  if(failDays>=3) insights.push({icon:"💡",text:`<strong>${failDays} days under 30%</strong> this month. Identify if they cluster on specific days — that pattern is your weak point.`});
+  if(activeDays.length>=7){
+    const wdAvg=activeDays.filter(d=>{const dw=new Date(d.dateStr).getDay();return dw>=1&&dw<=5;}).map(d=>d.pct);
+    const weAvg=activeDays.filter(d=>{const dw=new Date(d.dateStr).getDay();return dw===0||dw===6;}).map(d=>d.pct);
+    const wdM=wdAvg.length?Math.round(wdAvg.reduce((a,b)=>a+b,0)/wdAvg.length):0;
+    const weM=weAvg.length?Math.round(weAvg.reduce((a,b)=>a+b,0)/weAvg.length):0;
+    if(wdM>0&&weM>0){
+      if(wdM-weM>=15) insights.push({icon:"🗓️",text:`Weekdays <strong>${wdM}%</strong> vs weekends <strong>${weM}%</strong>. Your weekends need attention — even a lighter schedule helps maintain momentum.`});
+      else if(weM-wdM>=15) insights.push({icon:"🗓️",text:`Weekends (<strong>${weM}%</strong>) beat weekdays (<strong>${wdM}%</strong>). You thrive with more free time — see if you can bring that energy to weekdays.`});
+    }
+  }
+  if(!insights.length) insights.push({icon:"📝",text:`Track more days this month to unlock personalized insights about your patterns and weak points.`});
+  document.getElementById("review-insights").innerHTML=insights.map(ins=>`<div class="insight-item"><div class="insight-icon">${ins.icon}</div><div class="insight-txt">${ins.text}</div></div>`).join("");
+}
+
+function _reviewEmpty(){
+  document.getElementById("review-hero").innerHTML=`<div style="text-align:center;padding:24px 0;font-family:var(--mono);font-size:12px;color:var(--muted);">No task data found.<br>Start tracking your daily tasks first.</div>`;
+  document.getElementById("review-weeks").innerHTML="";
+  document.getElementById("review-skipped").innerHTML=`<div class="empty-state">No tasks defined</div>`;
+  document.getElementById("review-insights").innerHTML=`<div class="insight-item"><div class="insight-icon">📝</div><div class="insight-txt">Add tasks in the Edit tab, then check them off daily to see your review here.</div></div>`;
+}
+</script>
+<script>
+(async function autoInit(){
+  if(!("Notification" in window)) return;
+  if(Notification.permission==="granted"){
+    await registerSW();
+    scheduleNotifications();
+  }
+})();
+</script>
+</body>
+</html>
